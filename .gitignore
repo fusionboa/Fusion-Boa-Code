@@ -15,11 +15,10 @@ build/
 *.py
 !setup.py
 !install.py
-!apex.py
 !fusionboa.py
 
-# Keep apex_lang source .py files (recursively re-include all source)
-!apex_lang/**
+# Keep fusionboa_lang source .py files (recursively re-include all source)
+!fusionboa_lang/**
 
 # IDE / editor
 .vscode/
