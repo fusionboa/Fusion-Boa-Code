@@ -291,7 +291,7 @@ Fusion lang/
 
 ## 📄 License
 
-MIT — see LICENSE file.
+Proprietary — All Rights Reserved. See [LICENSE](LICENSE) file.
 
 ---
 
