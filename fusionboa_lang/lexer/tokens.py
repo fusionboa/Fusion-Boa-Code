@@ -556,7 +556,7 @@ KEYWORDS = {
     "ending with": TokenType.ENDS_WITH,
     "concludes with": TokenType.CONCLUDES_WITH,
     "finishing with": TokenType.ENDS_WITH,
-    "made of": TokenType.LIST_TYPE,
+
     "contains word": TokenType.CONTAINS,
     "holds": TokenType.CONTAINS,
     # NOTE: 'has item' removed - merging into HAS loses the right operand.
@@ -606,14 +606,6 @@ KEYWORDS = {
     "else if": TokenType.ELIF,
     "else when": TokenType.ELIF,
     "or when": TokenType.ELIF,
-    "integer": TokenType.INTEGER_TYPE,
-    "float": TokenType.FLOAT_TYPE,
-    "string": TokenType.STRING_TYPE,
-    "boolean": TokenType.BOOLEAN_TYPE,
-    "list": TokenType.LIST_TYPE,
-    "dict": TokenType.DICT_TYPE,
-    "dictionary": TokenType.DICT_TYPE,
-    "any": TokenType.ANY_TYPE,
     # English comparison operators (multi-word)
     "is equal to": TokenType.EQUAL_EQUAL,
     "equals": TokenType.EQUAL_EQUAL,
@@ -928,14 +920,7 @@ KEYWORDS = {
     "is weaker than": TokenType.LESS,
     "is faster than": TokenType.GREATER,
     "is slower than": TokenType.LESS,
-    # More type descriptors
-    "bit": TokenType.INTEGER_TYPE,
-    "byte": TokenType.STRING_TYPE,
-    "file": TokenType.STRING_TYPE,
-    "path": TokenType.STRING_TYPE,
-    "url": TokenType.STRING_TYPE,
-    "email": TokenType.STRING_TYPE,
-    "phone": TokenType.STRING_TYPE,
+    # More action verbs for operations
     # More action verbs for operations
     "rename": TokenType.SET,
     "modify": TokenType.SET,
@@ -1002,14 +987,7 @@ KEYWORDS = {
     "coupled with": TokenType.AND,
     "combined with": TokenType.AND,
     "alternatively": TokenType.OR,
-    # More type words - canonical only
-    "collection": TokenType.IDENTIFIER,
-    "sequence": TokenType.IDENTIFIER,
-    "vector": TokenType.IDENTIFIER,
-    "tuple": TokenType.IDENTIFIER,
-    "bag": TokenType.LIST_TYPE,
-    "mapping": TokenType.DICT_TYPE,
-    "object": TokenType.DICT_TYPE,
+
     # Natural function words
     "given that": TokenType.IF,
     "provided that": TokenType.IF,
