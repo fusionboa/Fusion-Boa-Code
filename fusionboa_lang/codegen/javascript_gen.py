@@ -15,9 +15,19 @@ class JavaScriptGenerator:
         self.ast = ast
         self.indent_level = 0
         self._in_class = False
+        self._class_names = set()
+        self._collect_class_names(ast)
 
     def _indent(self) -> str:
         return "  " * self.indent_level
+
+    def _collect_class_names(self, program: Program):
+        """Pre-scan AST to collect all class names for 'new' keyword detection."""
+        for stmt in program.statements:
+            if isinstance(stmt, ClassDefinition):
+                self._class_names.add(stmt.name)
+            elif isinstance(stmt, ExportStatement) and isinstance(stmt.declaration, ClassDefinition):
+                self._class_names.add(stmt.declaration.name)
 
     def generate(self) -> str:
         lines = []
@@ -101,6 +111,26 @@ class JavaScriptGenerator:
         return expr_str  # JS auto-coerces with + already
 
     def _gen_binary_op(self, node: BinaryOp) -> str:
+        # Pipe operator: x |> f -> f(x)
+        if node.operator == "|>":
+            left = self._gen_expression(node.left)
+            if isinstance(node.right, Identifier):
+                pipe_name = node.right.name
+                if pipe_name == "first":
+                    return f"{left}[0]"
+                if pipe_name == "last":
+                    return f"{left}[{left}.length - 1]"
+                if pipe_name == "reverse":
+                    return f"[...{left}].reverse()"
+                if pipe_name == "sort":
+                    return f"[...{left}].sort()"
+                if pipe_name == "unique":
+                    return f"[...new Set({left})]"
+                return f"{pipe_name}({left})"
+            if isinstance(node.right, Call):
+                callee = self._gen_expression(node.right.callee)
+                args = ", ".join(self._gen_expression(a) for a in node.right.arguments)
+                return f"{callee}({left}, {args})"
         op_map = {"and": "&&", "or": "||", "^": "**"}
         op_map.update({"==": "==", "!=": "!=", "<": "<", ">": ">",
                        "<=": "<=", ">=": ">=", "+": "+", "-": "-",
@@ -126,6 +156,28 @@ class JavaScriptGenerator:
                 return f"console.log({args})"
             if node.callee.name == "input":
                 return f"prompt({args})"
+            if node.callee.name == "str":
+                return f"String({args})"
+            if node.callee.name == "sum":
+                return f"({args}).reduce((a, b) => a + b, 0)"
+            if node.callee.name in self._class_names:
+                return f"new {callee}({args})"
+        # Translate Python-style string methods to JS
+        if isinstance(node.callee, Attribute):
+            obj = self._gen_expression(node.callee.object)
+            method = node.callee.attribute
+            if method == "title":
+                return f"{obj}.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ')"
+            if method == "capitalize":
+                return f"({obj}.charAt(0).toUpperCase() + {obj}.slice(1).toLowerCase())"
+            if method == "swapcase":
+                return f"{obj}.split('').map(c => c === c.toUpperCase() ? c.toLowerCase() : c.toUpperCase()).join('')"
+            if method == "upper":
+                return f"{obj}.toUpperCase()"
+            if method == "lower":
+                return f"{obj}.toLowerCase()"
+            if method == "strip":
+                return f"{obj}.trim()"
         return f"{callee}({args})"
 
     def _gen_attribute(self, node: Attribute) -> str:
@@ -283,6 +335,17 @@ class JavaScriptGenerator:
         for stmt in node.body:
             if isinstance(stmt, FunctionDefinition) and stmt.name == "init":
                 stmt.name = "constructor"
+                # If class extends another, insert super() before constructor body
+                if node.parent and stmt.body:
+                    super_call = ExpressionStatement(
+                        expression=Call(
+                            callee=Identifier(name="super"),
+                            arguments=[]
+                        )
+                    )
+                    stmt.body.insert(0, super_call)
+                lines.append(self._gen_statement(stmt))
+                continue
             lines.append(self._gen_statement(stmt))
         self._in_class = old_in_class
         self.indent_level -= 1
@@ -358,14 +421,17 @@ class JavaScriptGenerator:
         return "\n".join(lines)
 
     def _gen_destructuring_declaration(self, node: DestructuringDeclaration) -> str:
-        """'let [a, b] be expr' -> let [a, b] = expr
-        'let {name, age} be dict' -> let {name, age} = dict"""
+        """'let [a, b] be expr' -> [a, b] = expr (assignment, not redeclaration)
+        Object destructuring wrapped in parens to avoid JS block ambiguity."""
         if node.destructure_type == "list":
             targets = "[" + ", ".join(node.targets) + "]"
         else:
             targets = "{" + ", ".join(node.targets) + "}"
         value = self._gen_expression(node.value)
-        return self._indent() + f"let {targets} = {value};"
+        # Object destructuring: wrap entire assignment in parens: ({a, b} = obj)
+        if node.destructure_type == "dict":
+            return self._indent() + f"({targets} = {value});"
+        return self._indent() + f"{targets} = {value};"
 
     def _gen_increment_expression(self, node: IncrementExpression) -> str:
         """x++ or ++x"""
