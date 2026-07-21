@@ -10,16 +10,15 @@ dist/
 build/
 *.egg
 
-# Generated output from fusionboa build
-# (these are compiled artifacts, not source)
-*.py
+# Generated output from fusionboa build (compiled artifacts only)
+# Ignore .py files in ROOT only (not in subdirectories)
+/*.py
 !setup.py
 !install.py
-!apex.py
 !fusionboa.py
 
-# Keep apex_lang source .py files (recursively re-include all source)
-!apex_lang/**
+# Keep all source .py files in fusionboa_lang/
+!fusionboa_lang/**/*.py
 
 # IDE / editor
 .vscode/

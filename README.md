@@ -48,6 +48,50 @@ fusionboa build main.fusboa    # Generate output files
 
 ---
 
+## 📦 Runtime Dependencies
+
+FusionBoa itself only needs **Python 3.8+**. But to *run* compiled output for each target, you'll need that language's runtime installed.
+
+### Quick Install (Recommended)
+
+| Platform | Command | Gets You |
+|----------|---------|----------|
+| **Windows** | `winget install Python.Python.3.12 OpenJS.NodeJS` | Python + JavaScript |
+| **macOS** | `brew install python node` | Python + JavaScript |
+| **Linux** | `sudo apt install python3 nodejs -y` | Python + JavaScript |
+
+> 💡 **Python + Node.js** covers 2 of the 3 executable targets. For the rest, install what you need below.
+
+### All Targets — Install Guides
+
+#### Programming Languages
+
+| Target | Windows | macOS | Linux (Ubuntu/Debian) |
+|--------|---------|-------|-----------------------|
+| **Python** 🐍 | `winget install Python.Python.3.12` | `brew install python` | `sudo apt install python3 -y` |
+| **JavaScript/Node** 🟨 | `winget install OpenJS.NodeJS` | `brew install node` | `sudo apt install nodejs -y` |
+| **TypeScript** 🔷 | `npm i -g typescript ts-node` | `npm i -g typescript ts-node` | `npm i -g typescript ts-node` |
+| **Ruby** 💎 | `winget install RubyInstallerTeam.Ruby` | `brew install ruby` | `sudo apt install ruby -y` |
+| **Go** 🔵 | `winget install GoLang.Go` | `brew install go` | `sudo apt install golang -y` |
+| **Rust** 🦀 | `winget install Rustlang.Rust` | `curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs \| sh` | `curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs \| sh` |
+| **C++** ⚙️ | `winget install Microsoft.VisualStudio.2022.BuildTools` | `brew install gcc` | `sudo apt install g++ -y` |
+| **Lua** 🌙 | `winget install Lua.Lua` | `brew install lua` | `sudo apt install lua5.4 -y` |
+| **Swift** 🕊️ | `winget install Apple.Swift` | `brew install swift` | `sudo apt install swift -y` |
+| **Kotlin** 🟣 | `winget install JetBrains.Kotlin` | `brew install kotlin` | `sudo apt install kotlin -y` |
+| **Java** ☕ | `winget install Oracle.JDK.23` | `brew install openjdk` | `sudo apt install default-jdk -y` |
+| **Julia** 🟢 | `winget install Julialang.Julia` | `brew install julia` | `sudo apt install julia -y` |
+| **R** 📊 | `winget install RProject.R` | `brew install r` | `sudo apt install r-base -y` |
+| **C# (.NET)** 🟪 | `winget install Microsoft.DotNet.SDK.8` | `brew install dotnet-sdk` | `sudo apt install dotnet-sdk-8.0 -y` |
+| **React** ⚛️ | Requires Node.js (see above) | Requires Node.js (see above) | Requires Node.js (see above) |
+
+#### No Runtimes Needed (Generated Files)
+
+| Target | Notes |
+|--------|-------|
+| **HTML, CSS, JSON, YAML, TOML, XML, Markdown, INI** | These generate static files — open in any browser/editor. No runtime needed. |
+
+---
+
 ## 📝 Write in English, Not Code
 
 FusionBoa understands **hundreds of ways** to say the same thing. Pick your style:

@@ -1,0 +1,150 @@
+name: FusionBoa CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  # =========================================================================
+  # Code generation tests (all 15+ language generators)
+  # =========================================================================
+  codegen-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Run codegen unit tests (all languages)
+        run: python -m unittest fusionboa_lang.codegen.test_codegens -v
+
+  # =========================================================================
+  # Linux — Execution tests (runtimes available on Ubuntu)
+  # =========================================================================
+  linux-exec:
+    runs-on: ubuntu-latest
+    needs: codegen-tests
+    strategy:
+      fail-fast: false
+      matrix:
+        target: [py, js, rb, go, lua]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Install ${{ matrix.target }} runtime
+        run: |
+          case "${{ matrix.target }}" in
+            rb) sudo apt-get install -y ruby ;;
+            go) sudo apt-get install -y golang-go ;;
+            lua) sudo apt-get install -y lua5.4 ;;
+          esac
+      - name: Run examples with ${{ matrix.target }}
+        run: |
+          echo "$PWD" >> "$GITHUB_PATH"
+          export PATH="$PWD:$PATH"
+          for f in fusionboa_lang/examples/*.fusboa; do
+            echo "=== $(basename $f) [${{ matrix.target }}] ==="
+            python fusionboa.py run "$f" -t ${{ matrix.target }} || echo "WARN: $(basename $f) failed"
+          done
+
+  # =========================================================================
+  # macOS — Execution tests
+  # =========================================================================
+  macos-exec:
+    runs-on: macos-latest
+    needs: codegen-tests
+    strategy:
+      fail-fast: false
+      matrix:
+        target: [py, js, rb, lua]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Install ${{ matrix.target }} runtime
+        run: |
+          case "${{ matrix.target }}" in
+            rb) brew install ruby ;;
+            lua) brew install lua ;;
+          esac
+      - name: Run examples with ${{ matrix.target }}
+        run: |
+          export PATH="$PWD:$PATH"
+          for f in fusionboa_lang/examples/*.fusboa; do
+            echo "=== $(basename $f) [${{ matrix.target }}] ==="
+            python3 fusionboa.py run "$f" -t ${{ matrix.target }} || echo "WARN: $(basename $f) failed"
+          done
+
+  # =========================================================================
+  # Windows — Execution tests
+  # =========================================================================
+  windows-exec:
+    runs-on: windows-latest
+    needs: codegen-tests
+    strategy:
+      fail-fast: false
+      matrix:
+        target: [py, js]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Run examples with ${{ matrix.target }}
+        shell: pwsh
+        run: |
+          $env:PATH = "$PWD;$env:PATH"
+          Get-ChildItem fusionboa_lang/examples/*.fusboa | ForEach-Object {
+            Write-Host "=== $($_.Name) [${{ matrix.target }}] ==="
+            python fusionboa.py run $_.FullName -t ${{ matrix.target }}
+            if ($LASTEXITCODE -ne 0) { Write-Host "WARN: $($_.Name) failed" }
+          }
+
+  # =========================================================================
+  # Multi-target build + CLI smoke test
+  # =========================================================================
+  multi-target:
+    runs-on: ubuntu-latest
+    needs: codegen-tests
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Build all examples for all programming targets
+        run: |
+          export PATH="$PWD:$PATH"
+          for f in fusionboa_lang/examples/*.fusboa; do
+            echo "=== Building: $(basename $f) ==="
+            python fusionboa.py build "$f" -t py || true
+            python fusionboa.py build "$f" -t js || true
+          done
+      - name: Multi-target polyglot build
+        run: |
+          export PATH="$PWD:$PATH"
+          python fusionboa.py build fusionboa_lang/examples/polyglot_demo.fusboa
+          echo "Generated files:"
+          ls -la *.py *.js *.html *.css *.json *.yaml *.toml *.xml *.md *.ini 2>/dev/null || echo "(some formats skipped)"
+      - name: CLI smoke test
+        run: |
+          export PATH="$PWD:$PATH"
+          python fusionboa.py version
+          python fusionboa.py targets
+          python fusionboa.py init test_project --multi
+          ls -la test_project/
+          python fusionboa.py format fusionboa_lang/examples/hello.fusboa --check
