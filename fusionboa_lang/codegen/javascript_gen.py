@@ -14,6 +14,7 @@ class JavaScriptGenerator:
     def __init__(self, ast: Program):
         self.ast = ast
         self.indent_level = 0
+        self._in_class = False
 
     def _indent(self) -> str:
         return "  " * self.indent_level
@@ -256,10 +257,14 @@ class JavaScriptGenerator:
                 param_strs.append(f"{p} = {self._gen_expression(node.defaults[p])}")
             else:
                 param_strs.append(p)
+        if self._in_class:
+            fn_keyword = ""
+        else:
+            fn_keyword = "function "
         if node.name == "constructor":
             lines.append(self._indent() + f"{prefix}constructor({', '.join(param_strs)}) {{")
         else:
-            lines.append(self._indent() + f"{prefix}function {node.name}({', '.join(param_strs)}) {{")
+            lines.append(self._indent() + f"{prefix}{fn_keyword}{node.name}({', '.join(param_strs)}) {{")
         self.indent_level += 1
         for stmt in node.body: lines.append(self._gen_statement(stmt))
         self.indent_level -= 1
@@ -273,10 +278,13 @@ class JavaScriptGenerator:
         else:
             lines.append(self._indent() + f"class {node.name} {{")
         self.indent_level += 1
+        old_in_class = self._in_class
+        self._in_class = True
         for stmt in node.body:
             if isinstance(stmt, FunctionDefinition) and stmt.name == "init":
                 stmt.name = "constructor"
             lines.append(self._gen_statement(stmt))
+        self._in_class = old_in_class
         self.indent_level -= 1
         lines.append(self._indent() + "}")
         return "\n".join(lines)

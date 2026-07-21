@@ -372,8 +372,8 @@ class Parser:
             TokenType.ANY_TYPE: "any",
         }
         if token.type in type_keywords:
-            self._advance()
-            return type_keywords[token.type]
+            tok = self._advance()
+            return tok.value
         if self._is_name_token(token.type):
             self._advance()
             return token.value
