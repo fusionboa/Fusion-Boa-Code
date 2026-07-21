@@ -1,0 +1,61 @@
+# FusionBoa Language - .gitignore
+# ================================
+
+# Python bytecode & cache
+__pycache__/
+*.py[cod]
+*.pyo
+*.egg-info/
+dist/
+build/
+*.egg
+
+# Generated output from fusionboa build
+# (these are compiled artifacts, not source)
+*.py
+!setup.py
+!install.py
+!apex.py
+!fusionboa.py
+
+# Keep apex_lang source .py files (recursively re-include all source)
+!apex_lang/**
+
+# IDE / editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Virtual environments
+venv/
+env/
+.venv/
+.env/
+
+# Node (for JS/TS targets)
+node_modules/
+
+# Rust (for Rust targets)
+target/
+
+# Go (for Go targets)
+*.exe
+
+# Test artifacts
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Nul device file (accidental creation)
+nul
+
+# Temp files
+*.tmp
+*.temp

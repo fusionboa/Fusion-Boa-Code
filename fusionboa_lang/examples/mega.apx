@@ -1,0 +1,164 @@
+#
+# Apex Mega Example - All Features Demo
+#
+
+# ============= VARIABLES & CONSTANTS =============
+let name be "Apex"
+let score be 95
+const PI be 3.14159
+
+print "Welcome to " + name + "!"
+print "Score: " + score
+print "Pi is approximately " + PI
+
+# ============= FUNCTIONS =============
+define function greet with who:
+    return "Hello, " + who + "!"
+
+define function power with base, exp = 2:
+    return base ^ exp
+
+print greet("World")
+print "3 squared = " + power(3)
+print "5 cubed = " + power(5, 3)
+
+# ============= CONDITIONALS =============
+let grade be 85
+
+if grade >= 90:
+    print "A grade"
+or if grade >= 80:
+    print "B grade"
+or:
+    print "Keep trying!"
+
+# ============= TERNARY =============
+let status be "pass" if score >= 60 else "fail"
+print "Status: " + status
+
+# ============= LOOPS =============
+print "For loop 1 to 5:"
+for i from 1 to 5:
+    print i
+
+# ============= LISTS =============
+let colors be ["red", "green", "blue", "yellow", "purple"]
+
+print "For each color:"
+for each c in colors:
+    print "Color: " + c
+
+# ============= LIST COMPREHENSION =============
+let numbers be [1, 2, 3, 4, 5]
+let squares be []
+for each n in numbers:
+    let sq be n * n
+    set squares to squares + [sq]
+
+print "Squares: " + squares
+
+# ============= STRING INTERPOLATION =============
+let user_name be "Alice"
+let user_age be 28
+print "User {user_name} is {user_age} years old"
+
+# ============= DICTIONARIES =============
+let config be {theme: "dark", language: "en", debug: false}
+print "Theme: " + config["theme"]
+
+# ============= CLASSES =============
+define class Vehicle:
+    define function init with make, model:
+        set this.make to make
+        set this.model to model
+
+    define function info:
+        return "{this.make} {this.model}"
+
+define class Car inherits from Vehicle:
+    define function init with make, model, doors = 4:
+        set this.make to make
+        set this.model to model
+        set this.doors to doors
+
+    define function info:
+        return "{this.make} {this.model} with {this.doors} doors"
+
+let my_car be Car("Tesla", "Model 3")
+print my_car.info()
+
+# ============= PATTERN MATCHING =============
+let command be "start"
+match command:
+    case "start":
+        print "Starting..."
+    case "stop":
+        print "Stopping..."
+    default:
+        print "Unknown command"
+
+# ============= ERROR HANDLING =============
+try:
+    let result be 100 / 5
+    print "Division result: " + result
+catch error as e:
+    print "Error occurred"
+finally:
+    print "Always runs"
+
+# ============= REPEAT LOOP =============
+print "Repeat loop:"
+repeat 3 times:
+    print "Tick!"
+
+# ============= WHILE LOOP WITH DECREASE =============
+let counter be 3
+while counter > 0:
+    print "Counter: " + counter
+    decrease counter by 1
+
+# ============= LENGTH =============
+print "Colors array length: " + length of colors
+
+# ============= DESTRUCTURING ASSIGNMENT (NEW!) =============
+let point be {x: 10, y: 20}
+let pair be [1, 2, 3]
+
+# List destructuring
+let [a, b, c] be pair
+print "Destructured: " + a + ", " + b + ", " + c
+
+# Dict destructuring
+let {x, y} be point
+print "Point: x=" + x + ", y=" + y
+
+# ============= GENERATOR EXPRESSIONS (NEW!) =============
+let items be [1, 2, 3, 4, 5]
+let doubled be (x * 2 for each x in items where x > 2)
+print "Doubled (from generator): " + sum(doubled)
+
+# ============= LOGICAL ASSIGNMENT (NEW!) =============
+let username be null
+username ??= "guest"
+print "Username: " + username
+
+let total be 0
+total ||= 10
+print "Total after OR: " + total
+
+let flag be true
+flag &&= false
+print "Flag after AND: " + flag
+
+# ============= STRING METHODS (NEW!) =============
+let message be "hello world"
+print "Capitalized: " + capitalize message
+print "Title case: " + title message
+print "Swap case: " + swapcase message
+
+# ============= PIPE OPERATOR =============
+let data be [3, 1, 4, 1, 5, 9, 2, 6]
+let processed be data |> sort |> reverse |> first
+print "First of sorted reversed: " + processed
+
+print "Apex mega demo complete!"

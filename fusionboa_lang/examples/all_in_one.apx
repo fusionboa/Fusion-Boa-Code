@@ -1,0 +1,291 @@
+#
+# Apex All-in-One Example
+# One file. Every language you need. Zero clutter.
+#
+# Each section is routed to a different target using // @target
+# Run: apex build all_in_one.apx
+# This generates: .py, .html, .css, .json, .yaml, .toml, .xml, .md, .ini, .js files
+#
+
+# ==========================================
+# Python -- Data Processing
+# ==========================================
+// @target python
+define function process_data with items:
+    let total be 0
+    for each item in items:
+        increase total by item
+    return total
+
+define function analyze with data:
+    print "Processing " + length of data + " items"
+    let result be process_data(data)
+    print "Total: " + result
+    return result
+
+let sample be [10, 20, 30, 40, 50]
+let output be analyze(sample)
+
+# ==========================================
+# HTML -- Web Page Structure
+# ==========================================
+// @target html
+html lang "en":
+    head:
+        meta charset "UTF-8"
+        meta name "viewport" content "width=device-width, initial-scale=1.0"
+        title "Apex App"
+        link rel "stylesheet" href "style.css"
+    body:
+        header class "hero":
+            h1 "Welcome to Apex"
+            p "One language to rule them all"
+            button class "cta" "Get Started"/
+        main:
+            section id "features":
+                h2 "Features"
+                div class "feature-grid":
+                    div class "card":
+                        h3 "Multi-Language"
+                        p "Write once, compile to any language"
+                    div class "card":
+                        h3 "English-Like"
+                        p "Readable syntax for everyone"
+                    div class "card":
+                        h3 "Zero Clutter"
+                        p "All your code in one file"
+            section id "data":
+                h2 "Data Results"
+                div id "results"
+        footer:
+            p "Copyright 2026 Apex Language"
+
+# ==========================================
+# CSS -- Styling
+# ==========================================
+// @target css
+*:
+    margin "0"
+    padding "0"
+    box-sizing "border-box"
+
+body:
+    font-family "-apple-system, BlinkMacSystemFont, sans-serif"
+    background-color "#0f0f1a"
+    color "#ffffff"
+    line-height "1.6"
+
+.hero:
+    text-align "center"
+    padding "80px 20px"
+    background "linear-gradient(135deg, #667eea 0%, #764ba2 100%)"
+
+.hero h1:
+    font-size "3em"
+    margin-bottom "20px"
+
+.hero p:
+    font-size "1.2em"
+    opacity "0.9"
+    margin-bottom "30px"
+
+.cta:
+    display "inline-block"
+    padding "12px 30px"
+    background-color "#ffffff"
+    color "#667eea"
+    border-radius "25px"
+    text-decoration "none"
+    font-weight "bold"
+    font-size "1.1em"
+
+#features:
+    max-width "1200px"
+    margin "0 auto"
+    padding "60px 20px"
+
+#features h2:
+    text-align "center"
+    font-size "2em"
+    margin-bottom "40px"
+
+.feature-grid:
+    display "grid"
+    grid-template "repeat(3, 1fr)"
+    gap "30px"
+
+.card:
+    background-color "#1a1a2e"
+    padding "30px"
+    border-radius "10px"
+    transition "transform 0.3s ease"
+
+.card:hover:
+    transform "translateY(-5px)"
+
+.card h3:
+    margin-bottom "15px"
+    color "#667eea"
+
+footer:
+    text-align "center"
+    padding "40px"
+    background-color "#1a1a2e"
+    margin-top "60px"
+
+# ==========================================
+# JSON -- Configuration Data
+# ==========================================
+// @target json
+{
+    app: "Apex",
+    version: "0.3.0",
+    description: "Polyglot programming language",
+    features: ["multi-target", "english-syntax", "zero-clutter"],
+    config: {
+        theme: "dark",
+        languages: 14,
+        auto_detect: true
+    },
+    supported: {
+        programming: ["python", "js", "go", "rust", "cpp", "java", "ruby"],
+        markup: ["html", "css", "json", "yaml", "toml", "xml"]
+    }
+}
+
+# ==========================================
+# YAML -- App Configuration
+# ==========================================
+// @target yaml
+{
+    app: {
+        name: "Apex",
+        version: "0.3.0",
+        mode: "development"
+    },
+    server: {
+        host: "localhost",
+        port: 8080,
+        ssl: false
+    },
+    database: {
+        engine: "sqlite",
+        path: "./data/fusion.db",
+        pool_size: 10
+    },
+    logging: {
+        level: "info",
+        format: "json"
+    },
+    features: ["multi_target", "auto_detect", "hot_reload"]
+}
+
+# ==========================================
+# TOML -- Detailed Configuration
+# ==========================================
+// @target toml
+{
+    title: "Apex Config",
+    owner: {
+        name: "Apex Team",
+        org: "Apex Lang"
+    },
+    database: {
+        server: "localhost",
+        ports: [8000, 8001, 8002],
+        connection_max: 5000,
+        enabled: true
+    },
+    servers: {
+        alpha: {
+            ip: "10.0.0.1",
+            dc: "us-east"
+        },
+        beta: {
+            ip: "10.0.0.2",
+            dc: "us-west"
+        }
+    }
+}
+
+# ==========================================
+# XML -- Data Exchange Format
+# ==========================================
+// @target xml
+root version "1.0":
+    metadata:
+        title "Apex Project"
+        author "Apex Team"
+        created "2026-01-01"
+    dependencies:
+        dependency name "python" version "3.12"/
+        dependency name "node" version "22"/
+        dependency name "go" version "1.22"/
+    build:
+        step id "lint":
+            command "apex check"
+        step id "test":
+            command "apex test"
+        step id "build":
+            command "apex build"
+
+# ==========================================
+# Markdown -- Documentation
+# ==========================================
+// @target markdown
+# Apex Language
+
+Apex is a **polyglot programming language** that compiles to multiple targets.
+
+## Features
+
+- **Multi-Target**: One file, many outputs
+- **English-Like**: Readable by everyone
+- **14+ Languages**: From Python to Rust to HTML
+
+## Quick Start
+
+Run: apex build app.apx
+Run: apex run app.apx
+
+## License
+
+MIT
+
+# ==========================================
+# INI -- Legacy Config
+# ==========================================
+// @target ini
+[app]
+name Apex
+version 0.3.0
+mode production
+
+[server]
+host localhost
+port 8080
+
+[database]
+engine sqlite
+path ./data/db.sqlite
+
+[logging]
+level info
+format json
+
+[features]
+multitarget true
+hotreload true
+
+# ==========================================
+# JavaScript -- Frontend Logic
+# ==========================================
+// @target javascript
+define function update_results with data:
+    let element be document.getElementById("results")
+    set element.innerHTML to data
+
+define function init:
+    print "App initialized!"
+
+init()

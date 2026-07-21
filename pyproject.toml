@@ -1,0 +1,35 @@
+[build-system]
+requires = ["setuptools>=45", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "fusionboa-lang"
+version = "1.0.0-alpha"
+description = "FusionBoa — The polyglot programming language. One syntax, 23 targets."
+readme = "README.md"
+requires-python = ">=3.8"
+license = {text = "MIT"}
+authors = [
+    {name = "FusionBoa Team"}
+]
+keywords = ["compiler", "codegen", "polyglot", "programming-language", "transpiler"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+]
+
+[project.scripts]
+fusionboa = "fusionboa:main"
+
+[tool.setuptools]
+packages = ["fusionboa_lang", "fusionboa_lang.lexer", "fusionboa_lang.parser", "fusionboa_lang.codegen", "fusionboa_lang.runtime"]
+
+[tool.setuptools.package-data]
+fusionboa_lang = ["examples/*.fusboa"]

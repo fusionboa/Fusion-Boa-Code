@@ -1,0 +1,3 @@
+#!/bin/bash
+APEX_HOME="$(dirname "$(readlink -f "$0")")"
+python3 "$APEX_HOME/apex.py" "$@"

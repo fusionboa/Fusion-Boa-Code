@@ -1,0 +1,147 @@
+#
+# Apex Demo - Showcasing all major features
+# This is a comprehensive tour of the Apex language
+#
+
+# ---- VARIABLES ----
+let name be "Apex"
+let version be "1.0"
+let is_awesome be true
+let numbers be [1, 2, 3, 4, 5]
+let person be {name: "Alice", age: 30}
+
+print "Welcome to " + name + " v" + version
+
+# Change an existing variable
+set name to "Apex Lang"
+print "Now called: " + name
+
+# ---- FUNCTIONS ----
+define function greet with who:
+    return "Hello, " + who + "!"
+
+print greet("World")
+
+define function add with a, b:
+    return a + b
+
+let total be add(10, 20)
+print "10 + 20 = " + str(total)
+
+# ---- CONDITIONALS ----
+let x be 15
+
+if x is greater than 10:
+    print "x is big"
+or if x is less than 5:
+    print "x is small"
+or:
+    print "x is medium"
+
+# ---- LOOPS ----
+print "Counting from 1 to 5:"
+for i from 1 to 5:
+    print i
+
+print "Each item in the list:"
+for each num in numbers:
+    print num
+
+print "Repeat 3 times:"
+repeat 3 times:
+    print "Hello!"
+
+# ---- WHILE LOOP ----
+let count be 3
+while count is greater than 0:
+    print "Countdown: " + str(count)
+    decrease count by 1
+
+# ---- LIST OPERATIONS ----
+let fruits be ["apple", "banana", "cherry"]
+print "First fruit: " + fruits[0]
+print "Number of fruits: " + str(length of fruits)
+
+# Use the list
+for each fruit in fruits:
+    print "I like " + fruit
+
+# ---- DICTIONARIES ----
+let user be {name: "Bob", age: 25, city: "London"}
+print "User: " + user["name"] + " from " + user["city"]
+
+# ---- CLASSES ----
+define class Animal:
+    define function init with name:
+        set this.name to name
+
+    define function speak:
+        return this.name + " makes a sound"
+
+define class Dog inherits from Animal:
+    define function speak:
+        return this.name + " barks!"
+
+let my_pet be Dog("Rex")
+print my_pet.speak()
+
+# ---- TERNARY ----
+let age be 20
+let status be "adult" if age is greater than or equal to 18 else "minor"
+print "Status: " + status
+
+# ---- ERROR HANDLING ----
+try:
+    let result be 10 / 2
+    print "Result: " + str(result)
+catch error as e:
+    print "Caught an error"
+finally:
+    print "Cleanup done"
+
+# ---- MATCH (PATTERN MATCHING) ----
+let day be 3
+match day:
+    case 1:
+        print "Monday"
+    case 2:
+        print "Tuesday"
+    case 3:
+        print "Wednesday"
+    case 4:
+        print "Thursday"
+    case 5:
+        print "Friday"
+    default:
+        print "Weekend!"
+
+# ============= DESTRUCTURING (NEW!) =============
+let coordinates be [10, 20]
+let [x, y] be coordinates
+print "x=" + x + ", y=" + y
+
+let user_info be {name: "Alice", age: 30}
+let {name, age} be user_info
+print "{name} is {age} years old"
+
+# ============= GENERATOR EXPRESSIONS (NEW!) =============
+let values be [1, 2, 3, 4, 5, 6]
+let evens be (n for each n in values if n % 2 == 0)
+print "Sum of evens: " + sum(evens)
+
+# ============= LOGICAL ASSIGNMENT (NEW!) =============
+let config_value be null
+let result be config_value ?? "default_value"
+print "Config: " + result
+
+# ============= STRING METHODS =============
+let greeting be "hello fusion"
+print "Title: " + title greeting
+print "Capitalize: " + capitalize greeting
+
+# ============= PIPE OPERATOR =============
+let nums be [5, 3, 1, 4, 2]
+let sorted_first be nums |> sort |> first
+print "Smallest number: " + sorted_first
+
+print "Apex demo complete!"

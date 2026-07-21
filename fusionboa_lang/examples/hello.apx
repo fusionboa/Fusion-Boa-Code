@@ -1,0 +1,6 @@
+#
+# Hello World in Apex
+# The simplest Apex program
+#
+
+print "Hello, World! Welcome to Apex!"

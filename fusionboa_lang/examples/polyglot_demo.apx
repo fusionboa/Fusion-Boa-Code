@@ -1,0 +1,216 @@
+#
+# Fusion Polyglot Demo - v0.5.0 Masterpiece Edition
+# 
+# This file demonstrates:
+# 1. @target  - write in Apex syntax, compile to any language
+# 2. @raw     - write directly in the target language's native syntax
+# 3. @native  - same as @raw
+# 4. @passthrough - same as @raw
+#
+# If you already know Python, JS, Rust, etc. - just use @raw and write natively!
+# If you want Apex's clean English syntax - use @target!
+
+# ==========================================
+# PYTHON SECTION - Apex Syntax
+# ==========================================
+// @target python
+define function process_data with items:
+    let total be 0
+    for each item in items:
+        increase total by item
+    return total
+
+let sample be [10, 20, 30, 40, 50]
+let result be process_data(sample)
+print "Apex-processed result: " + result
+
+# ==========================================
+# PYTHON SECTION - Native Python Syntax
+# (Same thing, but written in Python directly)
+# ==========================================
+// @raw python
+
+def process_data_native(items):
+    total = 0
+    for item in items:
+        total += item
+    return total
+
+sample_native = [10, 20, 30, 40, 50]
+result_native = process_data_native(sample_native)
+print(f"Native Python result: {result_native}")
+
+
+# ==========================================
+# JAVASCRIPT - Apex Syntax
+# ==========================================
+// @target javascript
+define function greet with name:
+    print "Hello from Apex JS: " + name
+
+greet("World")
+
+# ==========================================
+# JAVASCRIPT - Native JavaScript
+# ==========================================
+// @native javascript
+
+function greetNative(name) {
+    console.log("Hello from native JS: " + name);
+}
+
+greetNative("World");
+
+// Arrow functions too!
+const triple = (x) => x * 3;
+console.log("Triple 5: " + triple(5));
+
+
+# ==========================================
+# HTML - Apex Syntax
+# ==========================================
+// @target html
+html lang "en":
+    body:
+        h1 "Generated from Apex"
+        p "This was compiled from Apex HTML syntax"
+
+# ==========================================
+# HTML - Native HTML
+# ==========================================
+// @raw html
+
+<!DOCTYPE html>
+<html lang="en">
+<body>
+    <h1>Written in Native HTML</h1>
+    <p>This was passed through directly - no Apex compilation needed!</p>
+    <ul>
+        <li>Use any HTML you want</li>
+        <li>Full control over the output</li>
+        <li>No need to learn Apex HTML syntax</li>
+    </ul>
+</body>
+</html>
+
+
+# ==========================================
+# CSS - Apex Syntax
+# ==========================================
+// @target css
+body:
+    font-family "Arial, sans-serif"
+    color "#333"
+
+# ==========================================
+# CSS - Native CSS
+# ==========================================
+// @passthrough css
+
+/* Native CSS - write it your way! */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, sans-serif;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    color: #fff;
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.container {
+    max-width: 800px;
+    padding: 40px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 20px;
+    backdrop-filter: blur(10px);
+}
+
+h1 {
+    font-size: 3em;
+    margin-bottom: 20px;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+}
+
+.card {
+    background: rgba(255,255,255,0.15);
+    padding: 20px;
+    border-radius: 12px;
+    margin: 15px 0;
+    transition: transform 0.3s ease;
+}
+
+.card:hover {
+    transform: translateY(-3px);
+}
+
+
+# ==========================================
+# JSON - Apex Syntax
+# ==========================================
+// @target json
+{
+    app: "Fusion Polyglot",
+    version: "0.5.0",
+    mode: "Apex syntax"
+}
+
+# ==========================================
+# JSON - Native JSON
+# ==========================================
+// @native json
+
+{
+    "app": "Fusion Polyglot",
+    "version": "0.5.0",
+    "mode": "native JSON passthrough",
+    "features": [
+        "write in any language",
+        "mix Apex and native code",
+        "single file, all outputs"
+    ],
+    "languages": {
+        "native": ["python", "javascript", "html", "css", "json", "yaml", "toml", "xml", "markdown", "ini"],
+        "apex_compiled": ["python", "javascript", "typescript", "ruby", "go", "rust", "cpp", "java", "kotlin", "swift", "csharp", "lua", "julia", "r", "react"]
+    }
+}
+
+
+# ==========================================
+# RUST - Apex Syntax
+# ==========================================
+// @target rust
+define function factorial with n:
+    if n <= 1:
+        give 1
+    return n * factorial(n - 1)
+
+print factorial(5)
+
+# ==========================================
+# RUST - Native Rust (passthrough)
+# ==========================================
+// @raw rust
+
+fn factorial_native(n: u64) -> u64 {
+    if n <= 1 {
+        1
+    } else {
+        n * factorial_native(n - 1)
+    }
+}
+
+fn main() {
+    println!("Native Rust factorial: {}", factorial_native(5));
+    
+    // Rust-specific features you can use freely!
+    let numbers: Vec<i32> = (1..=10).collect();
+    let squares: Vec<i32> = numbers.iter().map(|x| x * x).collect();
+    println!("Squares: {:?}", squares);
+}

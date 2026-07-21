@@ -1,0 +1,22 @@
+#!/usr/bin/env bash
+# =============================================================================
+# FusionBoa Language CLI — macOS / Linux launcher
+# =============================================================================
+# Usage:  ./fusionboa run file.fusboa
+#         ./fusionboa build file.fusboa
+# =============================================================================
+
+set -euo pipefail
+
+# Find the real script directory (handles symlinks)
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+FUSIONBOA_PY="$SCRIPT_DIR/fusionboa.py"
+
+# Check if Python is available
+if ! command -v python3 &> /dev/null; then
+    echo "[X] Python 3 not found! Install from https://www.python.org/"
+    exit 1
+fi
+
+# Run FusionBoa
+exec python3 "$FUSIONBOA_PY" "$@"
