@@ -17,32 +17,33 @@ fusionboa build app.fusboa              # Generate ALL targets at once
 
 ---
 
-## 🚀 Quick Start
+## 🚀 Quick Start — Clone & Install
 
 ### Windows
 ```batch
-:: Double-click install.bat (adds to PATH automatically)
-:: Then open a new terminal:
-
-fusionboa init my_project
-cd my_project
-fusionboa run main.fusboa
+git clone https://github.com/fusionboa/Fusion-Boa-Code.git
+cd Fusion-Boa-Code
+install.bat                    # Double-click or run — adds to PATH automatically
+:: Restart your terminal, then:
+fusionboa version              # FusionBoa Language v1.0.0-alpha
 ```
 
 ### macOS / Linux
 ```bash
+git clone https://github.com/fusionboa/Fusion-Boa-Code.git
+cd Fusion-Boa-Code
 chmod +x install.sh && ./install.sh
-source ~/.zshrc          # (or ~/.bashrc)
+source ~/.zshrc                # (or ~/.bashrc)
 
-fusionboa init my_project
-cd my_project
-fusionboa run main.fusboa
+fusionboa version              # FusionBoa Language v1.0.0-alpha
 ```
 
-### From source (any platform)
+### Create a project & run
 ```bash
-python install.py
-fusionboa version        # FusionBoa Language v1.0.0-alpha
+fusionboa init my_project
+cd my_project
+fusionboa run main.fusboa      # Compile + execute in one command
+fusionboa build main.fusboa    # Generate output files
 ```
 
 ---
