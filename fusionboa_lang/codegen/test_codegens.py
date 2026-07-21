@@ -66,6 +66,68 @@ class TestLexerNewFeatures(unittest.TestCase):
         self.assertNotIn("this", token_values, "Comment text should not produce tokens")
         self.assertNotIn("comment", token_values, "Comment text should not produce tokens")
 
+    def test_backslash_skipped_between_tokens(self):
+        """Backslash between tokens should be silently skipped."""
+        source = 'let x be \\ 5'
+        tokens = tokenize(source)
+        token_values = [t.value for t in tokens if t.type.name in ("IDENTIFIER", "INTEGER")]
+        self.assertIn("x", token_values)
+        self.assertIn(5, token_values)
+        self.assertEqual(len(tokens), 5, "Should produce LET, IDENTIFIER(x), BE, INTEGER(5), EOF")
+
+    def test_backslash_at_start_of_file(self):
+        """Backslash at start of file should not cause error."""
+        source = '\\let x be 5'
+        tokens = tokenize(source)
+        self.assertTrue(len(tokens) > 0)
+        token_values = [t.value for t in tokens if t.type.name in ("IDENTIFIER", "INTEGER")]
+        self.assertIn("x", token_values)
+        self.assertIn(5, token_values)
+
+    def test_backslash_before_newline(self):
+        """Backslash before newline should be skipped (line continuation in other langs)."""
+        source = 'let x be ' + chr(92) + '\n5'
+        tokens = tokenize(source)
+        token_values = [t.value for t in tokens if t.type.name in ("IDENTIFIER", "INTEGER")]
+        self.assertIn("x", token_values)
+        self.assertIn(5, token_values)
+
+    def test_multiple_backslashes(self):
+        """Multiple consecutive backslashes should all be skipped."""
+        source = 'let x be ' + chr(92) * 3 + ' 5'
+        tokens = tokenize(source)
+        token_values = [t.value for t in tokens if t.type.name in ("IDENTIFIER", "INTEGER")]
+        self.assertIn("x", token_values)
+        self.assertIn(5, token_values)
+
+    def test_backslash_in_string_still_escapes(self):
+        """Backslash should still work as escape character inside strings."""
+        source = 'let x be "hello\\nworld"'
+        tokens = tokenize(source)
+        strings = [t for t in tokens if t.type.name == "STRING"]
+        self.assertTrue(len(strings) > 0)
+        msg = 'backslash-n in string should produce newline'
+        self.assertIn("\n", strings[0].value, msg)
+
+    def test_backslash_not_breaking_other_operators(self):
+        """Backslash should not interfere with other operator parsing."""
+        source = 'let x \\ be 5 \\ + 3'
+        tokens = tokenize(source)
+        plus_tokens = [t for t in tokens if t.type.name == "PLUS"]
+        self.assertEqual(len(plus_tokens), 1, "PLUS operator should still be found")
+        integers = [t.value for t in tokens if t.type.name == "INTEGER"]
+        self.assertIn(5, integers)
+        self.assertIn(3, integers)
+
+    def test_backslash_in_raw_section_workaround(self):
+        """Backslash in a simulated raw section context should not crash."""
+        # Simulates a backslash that might appear in a file with native passthrough
+        source = 'let path be "C:\\\\Users"'
+        tokens = tokenize(source)
+        strings = [t for t in tokens if t.type.name == "STRING"]
+        self.assertTrue(len(strings) > 0)
+        # The backslash should be in the string value
+        self.assertIn("\\", strings[0].value)
 
 class TestParserNewFeatures(unittest.TestCase):
     """Tests for new parser features."""

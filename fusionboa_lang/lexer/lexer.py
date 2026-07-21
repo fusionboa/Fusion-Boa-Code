@@ -526,6 +526,14 @@ class Lexer:
                 self._advance()
                 continue
 
+            if ch == "\\":
+                # Backslash - skip silently. No semantic meaning in FusionBoa's
+                # English-like syntax. Prevents errors from Windows file paths,
+                # escaped Unicode sequences, or hidden control characters.
+                # Inside strings, backslash is already handled as an escape character.
+                self._advance()
+                continue
+
             # Single-char operators
             single_char_map = {
                 "%": TokenType.PERCENT, "^": TokenType.CARET,
