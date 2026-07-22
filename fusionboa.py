@@ -23,6 +23,7 @@ import sys
 import os
 import argparse
 from pathlib import Path
+from datetime import datetime
 
 sys.path.insert(0, str(Path(__file__).parent))
 
@@ -89,6 +90,23 @@ def compile_fusionboa(source: str) -> Program:
     tokens = lexer.tokenize()
     parser = Parser(tokens)
     return parser.parse()
+
+
+def get_desktop_dir() -> str:
+    """Get the user's Desktop folder path (cross-platform: Windows, macOS, Linux).
+    Uses os.path.expanduser('~') which works reliably on all platforms."""
+    return os.path.join(os.path.expanduser("~"), "Desktop")
+
+
+def make_output_dir(base_name: str) -> str:
+    """Create a timestamped output folder on the Desktop.
+    Returns the path to the created folder."""
+    desktop = get_desktop_dir()
+    timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    folder_name = f"fusionboa-{base_name}-{timestamp}"
+    output_dir = os.path.join(desktop, folder_name)
+    os.makedirs(output_dir, exist_ok=True)
+    return output_dir
 
 
 def generate_code(ast: Program, target: str) -> str:
@@ -306,7 +324,11 @@ def run_file(filepath: str, target: str = "python", show_code: bool = False):
 
 
 def build_file(filepath: str, target: str = "python", output: str = None, specific_targets: list = None):
-    """Compile a FusionBoa file and output the generated code."""
+    """Compile a FusionBoa file and output the generated code.
+    
+    Creates a timestamped folder on the user's Desktop and writes all
+    generated files there. Cross-platform: works on Windows, macOS, Linux.
+    """
     if not os.path.exists(filepath):
         print(f"Error: File not found: {filepath}")
         sys.exit(1)
@@ -317,22 +339,31 @@ def build_file(filepath: str, target: str = "python", output: str = None, specif
         sys.exit(1)
     base_name = Path(filepath).stem
     try:
+        # Create output folder on Desktop
+        output_dir = make_output_dir(base_name)
+        
         sections = split_by_target(source)
         has_annotations = any(t != "fusion" for t in sections)
+        
         if has_annotations:
-            print(f"[Building {filepath}...]")
+            print(f"  Building \"{filepath}\"...")
+            print(f"  Output folder: {output_dir}")
+            print()
             outputs = build_multi_target(source, base_name, specific_targets)
             if not outputs:
-                print("No targets generated.")
+                print("  No targets generated.")
                 return
             for target, (outfile, code) in outputs.items():
+                outpath = os.path.join(output_dir, outfile)
                 try:
-                    with open(outfile, "w", encoding="utf-8") as f:
+                    with open(outpath, "w", encoding="utf-8") as f:
                         f.write(code)
-                    print(f"   [+] {outfile}  ({target})")
+                    print(f"    [+] {outfile}  ({target})")
                 except Exception as e:
-                    print(f"   [!] Error writing {outfile}: {e}")
-            print(f"\nGenerated {len(outputs)} file(s).")
+                    print(f"    [!] Error writing {outfile}: {e}")
+            print()
+            print(f"  Generated {len(outputs)} file(s).")
+            print(f"  Location: {output_dir}", )
         else:
             if specific_targets:
                 target = specific_targets[0]
@@ -342,10 +373,10 @@ def build_file(filepath: str, target: str = "python", output: str = None, specif
                 output_path = output
             else:
                 ext = TARGET_EXTENSIONS.get(target, f".{target}")
-                output_path = f"{base_name}{ext}"
+                output_path = os.path.join(output_dir, f"{base_name}{ext}")
             with open(output_path, "w", encoding="utf-8") as f:
                 f.write(target_code)
-            print(f"Compiled to: {output_path}")
+            print(f"  Compiled to: {output_path}")
     except LexerError as e:
         print(f"Lexer Error: {e}", file=sys.stderr)
         sys.exit(1)
@@ -559,6 +590,8 @@ def main():
     elif args.command == "build":
         specific_targets = args.targets.split(",") if args.targets else None
         build_file(args.file, target=args.target, output=args.output, specific_targets=specific_targets)
+        print(f"  Open the folder to view your files!")
+        print()
     elif args.command == "tokens":
         show_tokens(args.file)
     elif args.command == "ast":

@@ -1,4 +1,8 @@
-# FusionBoa Language - .gitignore
+# FusionBoa Language - # Python cache files
+__pycache__/
+*.pyc
+*.pyo
+
 # ================================
 
 # Python bytecode & cache

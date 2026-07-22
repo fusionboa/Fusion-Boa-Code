@@ -26,14 +26,21 @@ fi
 PY_VER=$(python3 --version 2>&1)
 echo "  [+] $PY_VER"
 
-# --- Check if already installed ---
-if command -v fusionboa &> /dev/null; then
-    echo "  [~] 'fusionboa' is already in PATH!"
-    fusionboa version 2>/dev/null || true
-    echo
-    echo "  FusionBoa is ready."
-    exit 0
+# --- Step 1: Install Python package and dependencies via pip ---
+# Always run pip install — even if already installed, to pick up updates
+echo "  [*] Installing Python package with dependencies..."
+if python3 -m pip install -e "$SCRIPT_DIR" 2>&1; then
+    echo "  [+] Package installed successfully."
+else
+    echo "  [*] pip install failed — trying to upgrade pip first..."
+    python3 -m pip install --upgrade pip 2>&1 || true
+    if python3 -m pip install -e "$SCRIPT_DIR" 2>&1; then
+        echo "  [+] Package installed successfully (after pip upgrade)."
+    else
+        echo "  [~] pip install unavailable — continuing with PATH-only setup."
+    fi
 fi
+echo
 
 # --- Make fusionboa executable ---
 chmod +x "$SCRIPT_DIR/fusionboa"

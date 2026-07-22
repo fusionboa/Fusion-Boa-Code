@@ -24,19 +24,10 @@ if %errorlevel% neq 0 (
 echo   [+] Python found:
 python --version 2>&1
 
-:: Check if already installed
-where fusionboa >nul 2>&1
-if %errorlevel% equ 0 (
-    echo   [~] FusionBoa is already in your PATH!
-    echo.
-    fusionboa version 2>nul
-    goto :done
-)
-
-:: Delegate to the Python installer (uses registry on Windows, avoids setx truncation)
+:: Delegate to the Python installer which handles pip install + PATH setup
+:: (pip install is done first so dependencies are resolved)
 echo.
 echo   [*] Running installer...
-echo.
 python "%FUSIONBOA_HOME%\install.py"
 if %errorlevel% neq 0 (
     echo.
@@ -48,7 +39,6 @@ if %errorlevel% neq 0 (
 :: Refresh current session PATH so fusionboa works immediately
 set "PATH=%PATH%;%FUSIONBOA_HOME%"
 
-:done
 echo.
 echo   ========================================
 echo     FusionBoa is ready!

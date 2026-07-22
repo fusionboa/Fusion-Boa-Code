@@ -1,0 +1,19 @@
+app:
+  name: FusionBoa
+  version: 0.3.0
+  mode: development
+server:
+  host: localhost
+  port: 8080
+  ssl: false
+database:
+  engine: sqlite
+  path: ./data/fusion.db
+  pool_size: 10
+logging:
+  level: info
+  format: json
+features:
+  - multi_target
+  - auto_detect
+  - hot_reload

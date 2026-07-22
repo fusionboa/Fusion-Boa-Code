@@ -418,12 +418,12 @@ let x: int? be null                     # Optional type
 let x: string | int be "hello"         # Union type
 const PI be 3.14159                     # Constant
 constant MAX be 100                     # Alias for const
-final NAME be "Apex"                    # Alias for const
+final NAME be "FusionBoa"                    # Alias for const
 immutable ID be 42                      # Alias for const
 freeze SECRET be "xyz"                  # Alias for const
 lock KEY be 42                          # Alias for const
 seal TOKEN be "abc"                     # Alias for const
-set name to "Apex"                      # Reassign
+set name to "FusionBoa"                      # Reassign
 assign name to "Fusion"                 # Alias for set
 change name to "New"                    # Alias for set
 update name to "Latest"                 # Alias for set

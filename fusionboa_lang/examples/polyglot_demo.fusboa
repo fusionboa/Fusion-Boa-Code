@@ -2,16 +2,16 @@
 # Fusion Polyglot Demo - v0.5.0 Masterpiece Edition
 # 
 # This file demonstrates:
-# 1. @target  - write in Apex syntax, compile to any language
+# 1. @target  - write in FusionBoa syntax, compile to any language
 # 2. @raw     - write directly in the target language's native syntax
 # 3. @native  - same as @raw
 # 4. @passthrough - same as @raw
 #
 # If you already know Python, JS, Rust, etc. - just use @raw and write natively!
-# If you want Apex's clean English syntax - use @target!
+# If you want FusionBoa's clean English syntax - use @target!
 
 # ==========================================
-# PYTHON SECTION - Apex Syntax
+# PYTHON SECTION - FusionBoa Syntax
 # ==========================================
 // @target python
 define function process_data with items:
@@ -22,7 +22,7 @@ define function process_data with items:
 
 let sample be [10, 20, 30, 40, 50]
 let result be process_data(sample)
-print "Apex-processed result: " + result
+print "FusionBoa-processed result: " + result
 
 # ==========================================
 # PYTHON SECTION - Native Python Syntax
@@ -42,11 +42,11 @@ print(f"Native Python result: {result_native}")
 
 
 # ==========================================
-# JAVASCRIPT - Apex Syntax
+# JAVASCRIPT - FusionBoa Syntax
 # ==========================================
 // @target javascript
 define function greet with name:
-    print "Hello from Apex JS: " + name
+    print "Hello from FusionBoa JS: " + name
 
 greet("World")
 
@@ -67,13 +67,13 @@ console.log("Triple 5: " + triple(5));
 
 
 # ==========================================
-# HTML - Apex Syntax
+# HTML - FusionBoa Syntax
 # ==========================================
 // @target html
 html lang "en":
     body:
-        h1 "Generated from Apex"
-        p "This was compiled from Apex HTML syntax"
+        h1 "Generated from FusionBoa"
+        p "This was compiled from FusionBoa HTML syntax"
 
 # ==========================================
 # HTML - Native HTML
@@ -84,18 +84,18 @@ html lang "en":
 <html lang="en">
 <body>
     <h1>Written in Native HTML</h1>
-    <p>This was passed through directly - no Apex compilation needed!</p>
+    <p>This was passed through directly - no FusionBoa compilation needed!</p>
     <ul>
         <li>Use any HTML you want</li>
         <li>Full control over the output</li>
-        <li>No need to learn Apex HTML syntax</li>
+        <li>No need to learn FusionBoa HTML syntax</li>
     </ul>
 </body>
 </html>
 
 
 # ==========================================
-# CSS - Apex Syntax
+# CSS - FusionBoa Syntax
 # ==========================================
 // @target css
 body:
@@ -152,13 +152,13 @@ h1 {
 
 
 # ==========================================
-# JSON - Apex Syntax
+# JSON - FusionBoa Syntax
 # ==========================================
 // @target json
 {
     app: "Fusion Polyglot",
     version: "0.5.0",
-    mode: "Apex syntax"
+    mode: "FusionBoa syntax"
 }
 
 # ==========================================
@@ -172,18 +172,18 @@ h1 {
     "mode": "native JSON passthrough",
     "features": [
         "write in any language",
-        "mix Apex and native code",
+        "mix FusionBoa and native code",
         "single file, all outputs"
     ],
     "languages": {
         "native": ["python", "javascript", "html", "css", "json", "yaml", "toml", "xml", "markdown", "ini"],
-        "apex_compiled": ["python", "javascript", "typescript", "ruby", "go", "rust", "cpp", "java", "kotlin", "swift", "csharp", "lua", "julia", "r", "react"]
+        "fusionboa_compiled": ["python", "javascript", "typescript", "ruby", "go", "rust", "cpp", "java", "kotlin", "swift", "csharp", "lua", "julia", "r", "react"]
     }
 }
 
 
 # ==========================================
-# RUST - Apex Syntax
+# RUST - FusionBoa Syntax
 # ==========================================
 // @target rust
 define function factorial with n:

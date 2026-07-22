@@ -143,6 +143,50 @@ def install_unix():
     return True
 
 
+def install_dependencies():
+    """Install FusionBoa package and its dependencies via pip."""
+    print("  [*] Installing Python package and dependencies...")
+    
+    def _run_pip_install():
+        """Run pip install -e . and return True on success."""
+        try:
+            pip_args = [sys.executable, "-m", "pip", "install", "-e", str(FUSIONBOA_HOME)]
+            result = subprocess.run(
+                pip_args,
+                capture_output=True, text=True, timeout=120,
+            )
+            if result.returncode == 0:
+                for line in result.stdout.split('\n'):
+                    if any(kw in line.lower() for kw in ["installed", "requirement", "success", "already"]):
+                        print(f"      {line.strip()}")
+                return True
+            return False
+        except Exception:
+            return False
+
+    # First attempt
+    if _run_pip_install():
+        print("  [+] Package installed successfully.")
+        return True
+
+    # Second attempt — upgrade pip first, then retry
+    print("  [*] pip install failed — trying to upgrade pip first...")
+    try:
+        subprocess.run(
+            [sys.executable, "-m", "pip", "install", "--upgrade", "pip"],
+            capture_output=True, text=True, timeout=60,
+        )
+    except Exception:
+        pass
+
+    if _run_pip_install():
+        print("  [+] Package installed successfully (after pip upgrade).")
+        return True
+
+    print("  [~] pip-based install unavailable — continuing with PATH-only setup.")
+    return False
+
+
 def verify_installation():
     """Verify fusionboa works from this session."""
     print()
@@ -166,37 +210,34 @@ def main():
 
     check_python()
 
-    if _check_command_works():
-        print("  [~] 'fusionboa' command already works from PATH!")
-        print()
-        print("  FusionBoa is already installed and ready.")
-        verify_installation()
-        return
+    # Step 1: Install Python package and dependencies
+    pip_ok = install_dependencies()
 
-    if _check_path_contains(str(FUSIONBOA_HOME)):
-        print("  [~] FusionBoa directory is in PATH but command not found.")
-        print("  [~] Try restarting your terminal.")
-        verify_installation()
-        return
-
+    # Step 2: Add to PATH (always do this for direct CLI access)
     system = platform.system()
     if system == "Windows":
-        success = install_windows()
+        path_ok = install_windows()
     else:
-        success = install_unix()
+        path_ok = install_unix()
 
     print()
-    if success:
-        print("  [+] Installation complete!")
-        print("  [!] RESTART your terminal for PATH changes to take effect.")
+    if pip_ok:
+        print("  [+] Python package installed with dependency management.")
+    if path_ok:
+        print("  [+] PATH updated for direct CLI access.")
+    print()
+    print("  [+] Installation complete!")
+    print()
+    print("  Try it out:")
+    print("      fusionboa version")
+    print("      fusionboa help")
+    print("      fusionboa run hello.fusboa")
+    if not pip_ok:
         print()
-        print("  Try it out:")
-        print("      fusionboa version")
-        print("      fusionboa help")
-        print("      fusionboa run hello.fusboa")
-    else:
-        print("  [!] Manual installation required.")
-        print(f"  [!] Add this directory to your PATH: {FUSIONBOA_HOME}")
+        print("  [~] pip-based install unavailable. The 'fusionboa' command still works from PATH.")
+    if not path_ok:
+        print()
+        print("  [!] PATH not updated. Use 'fusionboa' from the installation directory.")
 
     verify_installation()
     print()

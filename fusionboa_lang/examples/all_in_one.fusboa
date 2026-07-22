@@ -1,9 +1,9 @@
 #
-# Apex All-in-One Example
+# FusionBoa All-in-One Example
 # One file. Every language you need. Zero clutter.
 #
 # Each section is routed to a different target using // @target
-# Run: apex build all_in_one.apx
+# Run: fusionboa build all_in_one.fusboa
 # This generates: .py, .html, .css, .json, .yaml, .toml, .xml, .md, .ini, .js files
 #
 
@@ -34,11 +34,11 @@ html lang "en":
     head:
         meta charset "UTF-8"
         meta name "viewport" content "width=device-width, initial-scale=1.0"
-        title "Apex App"
+        title "FusionBoa App"
         link rel "stylesheet" href "style.css"
     body:
         header class "hero":
-            h1 "Welcome to Apex"
+            h1 "Welcome to FusionBoa"
             p "One language to rule them all"
             button class "cta" "Get Started"/
         main:
@@ -58,7 +58,7 @@ html lang "en":
                 h2 "Data Results"
                 div id "results"
         footer:
-            p "Copyright 2026 Apex Language"
+            p "Copyright 2026 FusionBoa Language"
 
 # ==========================================
 # CSS -- Styling
@@ -138,7 +138,7 @@ footer:
 # ==========================================
 // @target json
 {
-    app: "Apex",
+    app: "FusionBoa",
     version: "0.3.0",
     description: "Polyglot programming language",
     features: ["multi-target", "english-syntax", "zero-clutter"],
@@ -159,7 +159,7 @@ footer:
 // @target yaml
 {
     app: {
-        name: "Apex",
+        name: "FusionBoa",
         version: "0.3.0",
         mode: "development"
     },
@@ -185,10 +185,10 @@ footer:
 # ==========================================
 // @target toml
 {
-    title: "Apex Config",
+    title: "FusionBoa Config",
     owner: {
-        name: "Apex Team",
-        org: "Apex Lang"
+        name: "FusionBoa Team",
+        org: "FusionBoa Lang"
     },
     database: {
         server: "localhost",
@@ -214,8 +214,8 @@ footer:
 // @target xml
 root version "1.0":
     metadata:
-        title "Apex Project"
-        author "Apex Team"
+        title "FusionBoa Project"
+        author "FusionBoa Team"
         created "2026-01-01"
     dependencies:
         dependency name "python" version "3.12"/
@@ -223,19 +223,19 @@ root version "1.0":
         dependency name "go" version "1.22"/
     build:
         step id "lint":
-            command "apex check"
+            command "fusionboa check"
         step id "test":
-            command "apex test"
+            command "fusionboa test"
         step id "build":
-            command "apex build"
+            command "fusionboa build"
 
 # ==========================================
 # Markdown -- Documentation
 # ==========================================
 // @target markdown
-# Apex Language
+# FusionBoa Language
 
-Apex is a **polyglot programming language** that compiles to multiple targets.
+FusionBoa is a **polyglot programming language** that compiles to multiple targets.
 
 ## Features
 
@@ -245,8 +245,8 @@ Apex is a **polyglot programming language** that compiles to multiple targets.
 
 ## Quick Start
 
-Run: apex build app.apx
-Run: apex run app.apx
+Run: fusionboa build app.fusboa
+Run: fusionboa run app.fusboa
 
 ## License
 
@@ -257,7 +257,7 @@ MIT
 # ==========================================
 // @target ini
 [app]
-name Apex
+name FusionBoa
 version 0.3.0
 mode production
 

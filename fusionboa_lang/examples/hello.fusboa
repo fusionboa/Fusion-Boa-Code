@@ -1,6 +1,5 @@
-#
-# Hello World in Apex
-# The simplest Apex program
+# Hello World in FusionBoa
+# The simplest FusionBoa program
 #
 
-print "Hello, World! Welcome to Apex!"
+print "Hello, World! Welcome to FusionBoa!"

@@ -794,8 +794,8 @@ class TestDataParser(unittest.TestCase):
     """Tests for the dedicated data value parser."""
 
     def test_parse_simple_dict(self):
-        result = parse_data('{name: "Apex", version: 1.0}')
-        self.assertEqual(result, {"name": "Apex", "version": 1.0})
+        result = parse_data('{name: "FusionBoa", version: 1.0}')
+        self.assertEqual(result, {"name": "FusionBoa", "version": 1.0})
 
     def test_parse_nested_dict(self):
         result = parse_data('{app: {name: "Test", enabled: true}}')
@@ -820,23 +820,23 @@ class TestDataParser(unittest.TestCase):
 
     def test_parse_multi_line(self):
         source = """{
-    name: "Apex",
+    name: "FusionBoa",
     version: 0.3,
     features: [1, 2, 3]
 }"""
         result = parse_data(source)
-        self.assertEqual(result["name"], "Apex")
+        self.assertEqual(result["name"], "FusionBoa")
         self.assertEqual(result["version"], 0.3)
         self.assertEqual(result["features"], [1, 2, 3])
 
     def test_parse_with_comments(self):
         source = """{
-    name: "Apex",  # the name
+    name: "FusionBoa",  # the name
     # this is a comment
     version: 1.0
 }"""
         result = parse_data(source)
-        self.assertEqual(result, {"name": "Apex", "version": 1.0})
+        self.assertEqual(result, {"name": "FusionBoa", "version": 1.0})
 
 
 class TestHtmlGenerator(unittest.TestCase):
@@ -929,9 +929,9 @@ class TestJsonGenerator(unittest.TestCase):
     """Tests for the JSON generator."""
 
     def test_simple_dict(self):
-        result = generate_json('{name: "Apex", version: 1.0}')
+        result = generate_json('{name: "FusionBoa", version: 1.0}')
         self.assertIn('"name"', result)
-        self.assertIn('"Apex"', result)
+        self.assertIn('"FusionBoa"', result)
         self.assertIn('"version"', result)
         self.assertIn('1.0', result)
 
@@ -952,18 +952,18 @@ class TestYamlGenerator(unittest.TestCase):
     """Tests for the YAML generator."""
 
     def test_simple(self):
-        result = generate_yaml('{name: "Apex"}')
+        result = generate_yaml('{name: "FusionBoa"}')
         self.assertIn("name:", result)
-        self.assertIn("Apex", result)
+        self.assertIn("FusionBoa", result)
 
 
 class TestTomlGenerator(unittest.TestCase):
     """Tests for the TOML generator."""
 
     def test_simple(self):
-        result = generate_toml('{name: "Apex"}')
+        result = generate_toml('{name: "FusionBoa"}')
         self.assertIn("name =", result)
-        self.assertIn('"Apex"', result)
+        self.assertIn('"FusionBoa"', result)
 
 
 class TestXmlGenerator(unittest.TestCase):
@@ -984,10 +984,10 @@ class TestIniGenerator(unittest.TestCase):
     """Tests for the INI generator."""
 
     def test_simple(self):
-        result = generate_ini('[section]\nname "Apex"')
+        result = generate_ini('[section]\nname "FusionBoa"')
         self.assertIn("[section]", result)
         self.assertIn("name =", result)
-        self.assertIn("Apex", result)
+        self.assertIn("FusionBoa", result)
 
 
 class TestMarkdownGenerator(unittest.TestCase):

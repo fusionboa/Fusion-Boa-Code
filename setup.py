@@ -25,6 +25,11 @@ setup(
         ],
     },
     python_requires=">=3.8",
+    install_requires=[
+        # FusionBoa has zero external Python dependencies.
+        # All imports use only the Python standard library.
+        # This list is maintained here for future extensibility.
+    ],
     classifiers=[
         "Development Status :: 3 - Alpha",
         "Intended Audience :: Developers",

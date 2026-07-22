@@ -1,10 +1,10 @@
 #
-# Apex Demo - Showcasing all major features
-# This is a comprehensive tour of the Apex language
+# FusionBoa Demo - Showcasing all major features
+# This is a comprehensive tour of the FusionBoa language
 #
 
 # ---- VARIABLES ----
-let name be "Apex"
+let name be "FusionBoa"
 let version be "1.0"
 let is_awesome be true
 let numbers be [1, 2, 3, 4, 5]
@@ -13,7 +13,7 @@ let person be {name: "Alice", age: 30}
 print "Welcome to " + name + " v" + version
 
 # Change an existing variable
-set name to "Apex Lang"
+set name to "FusionBoa Lang"
 print "Now called: " + name
 
 # ---- FUNCTIONS ----
@@ -144,4 +144,4 @@ let nums be [5, 3, 1, 4, 2]
 let sorted_first be nums |> sort |> first
 print "Smallest number: " + sorted_first
 
-print "Apex demo complete!"
+print "FusionBoa demo complete!"
