@@ -4,10 +4,11 @@
 
 FusionBoa is the polyglot programming language where you write code the way you *think* — in natural, English-like syntax — and compile a single `.fusboa` file to **23 different targets**: Python, JavaScript, TypeScript, Go, Rust, C++, Java, C#, Ruby, Lua, Kotlin, Swift, Julia, R, React, HTML, CSS, JSON, YAML, TOML, XML, Markdown, and INI.
 
-[![Tests](https://img.shields.io/badge/tests-200%2F200-brightgreen)](https://github.com)
-[![Targets](https://img.shields.io/badge/targets-23-blue)](https://github.com)
-[![Keywords](https://img.shields.io/badge/keywords-708-orange)](https://github.com)
-[![Version](https://img.shields.io/badge/version-0.7.0-purple)](https://github.com)
+[![CI](https://github.com/fusionboa/Fusion-Boa-Code/actions/workflows/ci.yml/badge.svg)](https://github.com/fusionboa/Fusion-Boa-Code/actions/workflows/ci.yml)
+[![Tests](https://img.shields.io/badge/tests-207%2F207-brightgreen)](https://github.com/fusionboa/Fusion-Boa-Code)
+[![Targets](https://img.shields.io/badge/targets-23-blue)](https://github.com/fusionboa/Fusion-Boa-Code)
+[![Keywords](https://img.shields.io/badge/keywords-708-orange)](https://github.com/fusionboa/Fusion-Boa-Code)
+[![Version](https://img.shields.io/badge/version-1.0.0--alpha-purple)](https://github.com/fusionboa/Fusion-Boa-Code/releases)
 
 ```bash
 fusionboa run hello.fusboa              # Compile + run as Python
@@ -25,7 +26,7 @@ git clone https://github.com/fusionboa/Fusion-Boa-Code.git
 cd Fusion-Boa-Code
 install.bat                    # Double-click or run — adds to PATH automatically
 :: Restart your terminal, then:
-fusionboa version              # FusionBoa Language v1.0.0-alpha
+fusionboa version              # → FusionBoa Language v1.0.0-alpha
 ```
 
 ### macOS / Linux
@@ -35,7 +36,7 @@ cd Fusion-Boa-Code
 chmod +x install.sh && ./install.sh
 source ~/.zshrc                # (or ~/.bashrc)
 
-fusionboa version              # FusionBoa Language v1.0.0-alpha
+fusionboa version              # → FusionBoa Language v1.0.0-alpha
 ```
 
 ### Create a project & run

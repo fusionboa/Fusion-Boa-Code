@@ -15,7 +15,7 @@ setup(
     description="FusionBoa — The polyglot programming language. Write once, compile to Python, JavaScript, Go, Rust, and 19 more targets.",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    url="https://github.com/fusionboa-lang/fusionboa",
+    url="https://github.com/fusionboa/Fusion-Boa-Code",
     packages=find_packages(),
     include_package_data=True,
     py_modules=["fusionboa"],
@@ -33,7 +33,7 @@ setup(
     classifiers=[
         "Development Status :: 3 - Alpha",
         "Intended Audience :: Developers",
-        "License :: OSI Approved :: MIT License",
+        "License :: Other/Proprietary License",
         "Programming Language :: Python :: 3",
         "Programming Language :: Python :: 3.8",
         "Programming Language :: Python :: 3.9",

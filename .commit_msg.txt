@@ -1,0 +1,11 @@
+Rename Apex to FusionBoa + 23-target test + desktop build output
+
+- Renamed all Apex references to FusionBoa in examples, docs, and tests
+- Updated all .fusboa example files (all_in_one, mega, polyglot_demo, hello, demo, app)
+- Updated generated all_in_one.* output files and COMPLETE_SYNTAX.md
+- Updated test_codegens.py test data strings
+- Added complete_test.fusboa with all 23 FusionBoa targets using // @target
+- Added tests/complete_test_runner.py for cross-language validation
+- Modified fusionboa.py build command to output to timestamped Desktop folder
+- Desktop output is cross-platform (Windows, macOS, Linux)
+- Improved install scripts (pip install, PATH setup)

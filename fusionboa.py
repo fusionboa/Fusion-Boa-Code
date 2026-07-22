@@ -547,6 +547,11 @@ def show_targets():
 
 
 def main():
+    # Handle --version / -v before argparse to keep things simple
+    if len(sys.argv) > 1 and sys.argv[1] in ("--version", "-v"):
+        print(f"FusionBoa Language v{VERSION}")
+        sys.exit(0)
+    
     parser = argparse.ArgumentParser(
         description="FusionBoa Language - Write in English, compile to everything",
         prog="fusionboa"

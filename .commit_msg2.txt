@@ -1,0 +1,8 @@
+Professional polish: badges, licenses, CLI --version, gitignore, changelog, makefile
+
+- Fixed README badges to point to actual repo (version 1.0.0-alpha, tests 207/207)
+- Fixed setup.py license mismatch (MIT->Proprietary) + GitHub URL
+- Updated .gitignore with build outputs, IDE files, venvs
+- Added CHANGELOG.md tracking all versions
+- Added Makefile with common dev tasks (test, build, run, clean)
+- Added --version / -v flag to CLI
