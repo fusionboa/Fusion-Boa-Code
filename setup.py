@@ -10,9 +10,9 @@ with open("README.md", "r", encoding="utf-8") as fh:
 
 setup(
     name="fusionboa-lang",
-    version="1.0.0-alpha",
+    version="0.9.0",
     author="FusionBoa Team",
-    description="FusionBoa — The polyglot programming language. Write once, compile to Python, JavaScript, Go, Rust, and 19 more targets.",
+    description="FusionBoa v0.9.0 — 725 English-like keywords. Write once, compile to Python, JavaScript, Go, Rust, C++, and 18 more targets. 74+ features: multiple dispatch, generators, UFCS, macros, operator overloading, channels, memory tracking, meta-factories.",
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://github.com/fusionboa/Fusion-Boa-Code",
@@ -43,5 +43,5 @@ setup(
         "Topic :: Software Development :: Compilers",
         "Topic :: Software Development :: Code Generators",
     ],
-    keywords="compiler codegen polyglot programming-language transpiler",
+    keywords="compiler codegen polyglot programming-language transpiler english-like multi-target natural-language metaprogramming concurrency",
 )

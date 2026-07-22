@@ -16,10 +16,10 @@
     <img src="https://img.shields.io/badge/targets-23-blue" alt="Targets">
   </a>
   <a href="https://github.com/fusionboa/Fusion-Boa-Code">
-    <img src="https://img.shields.io/badge/keywords-708-orange" alt="Keywords">
+    <img src="https://img.shields.io/badge/keywords-725-orange" alt="Keywords">
   </a>
   <a href="https://github.com/fusionboa/Fusion-Boa-Code/releases">
-    <img src="https://img.shields.io/badge/version-1.0.0--alpha-purple" alt="Version">
+    <img src="https://img.shields.io/badge/version-v0.9.0-purple" alt="Version">
   </a>
 </p>
 
@@ -62,6 +62,14 @@ in the event that x > 0: ...   supposing x > 0: ...
 for each item in list: ...       scanning through items: ...
 walk items: ...                  iterate over items: ...
 
+# v0.9.0 Advanced Systems:
+with lifetime 'a: ...                    # Rust borrow checker
+let addr be location of variable         # C++ pointer addressing
+execute assembly: "MOV RAX, 60"         # Inline assembly
+define structural factory CoreModel: ... # Python metaclass
+suspend interface rendering using api: ..# React Suspense
+spin up worker pinned to core 3: ...    # CPU affinity
+
 # 23 targets from ONE file:
 // @target python            → complete_test.py
 // @target javascript         → complete_test.js
@@ -86,7 +94,7 @@ git clone https://github.com/fusionboa/Fusion-Boa-Code.git
 cd Fusion-Boa-Code
 install.bat                    # Double-click or run — adds to PATH automatically
 :: Restart your terminal, then:
-fusionboa version              # → FusionBoa Language v1.0.0-alpha
+fusionboa version              # → FusionBoa Language v0.9.0
 ```
 
 ### macOS / Linux
@@ -96,7 +104,7 @@ cd Fusion-Boa-Code
 chmod +x install.sh && ./install.sh
 source ~/.zshrc                # (or ~/.bashrc)
 
-fusionboa version              # → FusionBoa Language v1.0.0-alpha
+fusionboa version              # → FusionBoa Language v0.9.0
 ```
 
 ### Create a project & run
@@ -305,8 +313,8 @@ body:
 // @target json
 {
     name: "fusionboa-app",
-    version: "0.7.0",
-    targets: ["python", "javascript", "html", "css", "json"]
+    version: "0.9.0",
+    targets: ["python", "javascript", "html", "css", "json", "go", "rust", "c++", "java", "c#", "ruby", "lua", "kotlin", "swift", "julia", "r"]
 }
 ```
 
@@ -363,12 +371,12 @@ fn main() { println!("Hello from Rust!"); }
 
 | Metric | Count |
 |--------|-------|
-| Keywords | **708** |
+| Keywords | **725** |
 | Token types | **228** |
-| Syntax aliases | **500+** |
+| Syntax aliases | **550+** |
 | Compile targets | **23** |
 | Tests passing | **207/207** |
-| Natural language patterns | 60+ categories |
+| Natural language patterns | 74+ features across 42 syntax sections |
 
 ---
 
@@ -383,7 +391,7 @@ Fusion lang/
 ├── install.sh            # macOS/Linux installer
 ├── install.py            # Cross-platform installer
 ├── README.md             # This file
-├── COMPLETE_SYNTAX.md    # Full 700+ line syntax reference
+├── COMPLETE_SYNTAX.md    # Full v0.9.0 syntax reference (42 sections, 74+ features)
 ├── fusionboa_lang/
 │   ├── lexer/            # Tokenizer (708 keywords)
 │   ├── parser/           # Parser (English-like AST)
