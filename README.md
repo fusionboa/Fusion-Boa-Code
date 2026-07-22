@@ -1,19 +1,79 @@
 # ⚡ FusionBoa Language
 
-**Write in English. Compile to everything.**
+<h3 align="center">
+  Write in English. Compile to <strong>23 languages</strong>.<br>
+  One file. Every output you need. Zero clutter.
+</h3>
 
-FusionBoa is the polyglot programming language where you write code the way you *think* — in natural, English-like syntax — and compile a single `.fusboa` file to **23 different targets**: Python, JavaScript, TypeScript, Go, Rust, C++, Java, C#, Ruby, Lua, Kotlin, Swift, Julia, R, React, HTML, CSS, JSON, YAML, TOML, XML, Markdown, and INI.
+<p align="center">
+  <a href="https://github.com/fusionboa/Fusion-Boa-Code/actions/workflows/ci.yml">
+    <img src="https://github.com/fusionboa/Fusion-Boa-Code/actions/workflows/ci.yml/badge.svg" alt="CI">
+  </a>
+  <a href="https://github.com/fusionboa/Fusion-Boa-Code">
+    <img src="https://img.shields.io/badge/tests-207%2F207-brightgreen" alt="Tests">
+  </a>
+  <a href="https://github.com/fusionboa/Fusion-Boa-Code">
+    <img src="https://img.shields.io/badge/targets-23-blue" alt="Targets">
+  </a>
+  <a href="https://github.com/fusionboa/Fusion-Boa-Code">
+    <img src="https://img.shields.io/badge/keywords-708-orange" alt="Keywords">
+  </a>
+  <a href="https://github.com/fusionboa/Fusion-Boa-Code/releases">
+    <img src="https://img.shields.io/badge/version-1.0.0--alpha-purple" alt="Version">
+  </a>
+</p>
 
-[![CI](https://github.com/fusionboa/Fusion-Boa-Code/actions/workflows/ci.yml/badge.svg)](https://github.com/fusionboa/Fusion-Boa-Code/actions/workflows/ci.yml)
-[![Tests](https://img.shields.io/badge/tests-207%2F207-brightgreen)](https://github.com/fusionboa/Fusion-Boa-Code)
-[![Targets](https://img.shields.io/badge/targets-23-blue)](https://github.com/fusionboa/Fusion-Boa-Code)
-[![Keywords](https://img.shields.io/badge/keywords-708-orange)](https://github.com/fusionboa/Fusion-Boa-Code)
-[![Version](https://img.shields.io/badge/version-1.0.0--alpha-purple)](https://github.com/fusionboa/Fusion-Boa-Code/releases)
+---
+
+## 🚀 Try It in 30 Seconds
+
+### Option 1: Docker (no install needed)
+```bash
+docker build -t fusionboa .
+docker run --rm fusionboa fusionboa build complete_test.fusboa
+```
+
+### Option 2: Clone & Run
+```bash
+git clone https://github.com/fusionboa/Fusion-Boa-Code.git
+cd Fusion-Boa-Code
+python fusionboa.py build complete_test.fusboa  # Generates 23 files on your Desktop!
+```
+
+### Option 3: One-Click Install
+**Windows:** Double-click `install.bat` \
+**macOS/Linux:** `chmod +x install.sh && ./install.sh`
+
+---
+
+## 💡 What Makes FusionBoa Different?
+
+```fusionboa
+# Write code the way you THINK — in natural English
+
+let name be "FusionBoa"
+print "Hello, " + name + "!"
+
+# 15+ ways to start a conditional:
+if x > 0: ...          provided x > 0: ...
+in the event that x > 0: ...   supposing x > 0: ...
+
+# 25+ ways to write a loop:
+for each item in list: ...       scanning through items: ...
+walk items: ...                  iterate over items: ...
+
+# 23 targets from ONE file:
+// @target python            → complete_test.py
+// @target javascript         → complete_test.js
+// @target html               → complete_test.html
+// @target rust               → complete_test.rs
+// ... all 23 at once!
+```
 
 ```bash
-fusionboa run hello.fusboa              # Compile + run as Python
-fusionboa run hello.fusboa --target js  # Compile + run as JavaScript
-fusionboa build app.fusboa              # Generate ALL targets at once
+fusionboa build complete_test.fusboa  # → 23 files on your Desktop
+fusionboa run complete_test.fusboa     # → Factorial: 120
+fusionboa run complete_test.fusboa -t js -s  # Show + run as JavaScript
 ```
 
 ---
@@ -307,7 +367,7 @@ fn main() { println!("Hello from Rust!"); }
 | Token types | **228** |
 | Syntax aliases | **500+** |
 | Compile targets | **23** |
-| Tests passing | **200/200** |
+| Tests passing | **207/207** |
 | Natural language patterns | 60+ categories |
 
 ---
