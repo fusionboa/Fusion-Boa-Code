@@ -837,7 +837,9 @@ KEYWORDS = {
     "strain": TokenType.FILTER,
     "winnow": TokenType.FILTER,
     "query": TokenType.SEARCH,
-    "interrogate": TokenType.SEARCH,
+    # NOTE: "interrogate" removed from SEARCH to avoid collision
+    # with v0.9.0 reflection syntax ("interrogate layout of...").
+    # Falls through to IDENTIFIER for spec-level forward compatibility.
     "probe": TokenType.SEARCH,
     "explore": TokenType.SEARCH,
     "scan": TokenType.SEARCH,

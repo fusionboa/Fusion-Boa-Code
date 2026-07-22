@@ -100,6 +100,15 @@ class GoGenerator:
             m = {"neg": "-", "not": "!", "~": "^"}
             return f"({m.get(node.operator, '')}{self._gen_expression(node.operand)})"
         if isinstance(node, Call):
+            # Rewrite extension method calls: obj.method(args) -> _Extension_Type_method(obj, args)
+            if isinstance(node.callee, Attribute):
+                method_name = node.callee.attribute
+                for type_name, methods in self._extension_methods.items():
+                    if method_name in methods:
+                        obj_name = self._gen_expression(node.callee.object)
+                        args = ", ".join([obj_name] + [self._gen_expression(a) for a in node.arguments])
+                        return f"__{type_name}_{method_name}({args})"
+            # Normal call handling
             callee = self._gen_expression(node.callee)
             args = ", ".join(self._gen_expression(a) for a in node.arguments)
             if isinstance(node.callee, Identifier) and node.callee.name == "print":
@@ -107,18 +116,6 @@ class GoGenerator:
             return f"{callee}({args})"
         if isinstance(node, Attribute): return f"{self._gen_expression(node.object)}.{node.attribute}"
         if isinstance(node, Index): return f"{self._gen_expression(node.object)}[{self._gen_expression(node.index)}]"
-        if isinstance(node, Call):
-            # Rewrite extension method calls for Go: obj.method(args) -> _Extension_Type_method(obj, args)
-            if isinstance(node.callee, Attribute):
-                obj_name = self._gen_expression(node.callee.object)
-                method_name = node.callee.attribute
-                # Check if this method is a registered extension method
-                for type_name, methods in self._extension_methods.items():
-                    if method_name in methods:
-                        args = ", ".join([obj_name] + [self._gen_expression(a) for a in node.arguments])
-                        return f"__{type_name}_{method_name}({args})"
-                return self._gen_call(node)
-            return self._gen_call(node)
         if isinstance(node, ListLiteral):
             el = ", ".join(self._gen_expression(e) for e in node.elements)
             return f"[]interface{{}}{{{el}}}"

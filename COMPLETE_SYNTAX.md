@@ -1,9 +1,9 @@
 # FusionBoa Language — Complete Syntax Reference
 
-**Version 0.7.0 "FusionBoa" — July 2026**
+**Version 0.9.0 "Insane Mode" — July 2026**
 
 A polyglot programming language with English-like syntax. Write once, compile to 23 targets.
-**708 keywords**, **228 token types**, **500+ syntax aliases**, **60+ language features**.
+**708 keywords**, **228 token types**, **500+ syntax aliases**, **74+ language features**.
 
 ---
 
@@ -1084,7 +1084,7 @@ html lang "en":
     body: h1 "Hello!"
 
 // @target json
-{app: "FusionBoa", version: "0.7.0"}
+{app: "FusionBoa", version: "0.9.0"}
 ```
 
 ### Native Passthrough Mode
@@ -1116,7 +1116,803 @@ fn greet(name: &str) -> String {
 
 ---
 
-## 26. QUICK REFERENCE — ALL COMMANDS
+## 26. v0.9.0 FEATURE INDEX
+
+Sections 1–25 cover all core language features. The 7 v0.8.0 "God Mode" paradigms are in §27–33. The 7 v0.9.0 "Insane Mode" advanced systems are in §35–41. Complete Quick Reference is at §42.
+
+---
+
+## 27. MULTIPLE DISPATCH (MULTI-METHODS)
+
+Traditional OOP dispatches on the first argument (the caller) only. Multiple Dispatch checks the **runtime types of all arguments** to select the best matching function automatically — like Julia's core method system.
+
+```fusion
+define function collide with a: Warrior, b: Dragon:
+    print "The warrior strikes the dragon with a sword!"
+
+define function collide with a: Wizard, b: Dragon:
+    print "The wizard casts a fireball at the dragon!"
+
+define function collide with a: Warrior, b: Spell:
+    print "The warrior deflects the spell with a shield!"
+
+define function collide with a: Wizard, b: Spell:
+    print "The wizard absorbs the magic into their staff!"
+
+# Usage — the compiler picks the right one at runtime:
+let hero be Warrior(name: "Arthur")
+let enemy be Dragon(name: "Smaug")
+collide hero with enemy        # → "The warrior strikes the dragon with a sword!"
+
+let mage be Wizard(name: "Gandalf")
+let curse be Spell(name: "Hex")
+collide mage with curse        # → "The wizard absorbs the magic into their staff!"
+```
+
+**Cross-target compilation:**
+| Target | Strategy |
+|--------|----------|
+| Python | `@singledispatch` + `@singledispatchmethod` or `multipledispatch` package |
+| Julia | Native multiple dispatch — direct 1:1 mapping! |
+| JavaScript/TS | Manual `typeof` dispatch table or visitor pattern |
+| Java/C# | Visitor pattern or overloaded static methods with `instanceof` chains |
+| C++ | Function overload resolution with `dynamic_cast` chains |
+| Rust | Trait-based dispatch with `dyn` |
+
+---
+
+## 28. ASYNC STREAMS & GENERATOR YIELDING
+
+Generators produce values **lazily**, one at a time, pausing their state between yields. Combined with `async`, they create asynchronous data streams that don't block execution.
+
+```fusion
+# Synchronous generator — yields values one at a time
+define function stream_numbers -> generator:
+    let counter be 0
+    as long as counter < 100:
+        increase counter by 1
+        yield counter                     # Pauses state, returns value lazily
+
+# Consuming a generator
+for each num in stream_numbers():
+    if num > 10:
+        break                             # Only 11 iterations — never computes all 100
+    print num
+
+# Async generator — yields values asynchronously
+define async function stream_events with url:
+    let connection be connect to url
+    as long as connection is alive:
+        let event be await connection.read()
+        yield event                       # Async yield — non-blocking!
+
+# Consuming async streams
+for await each event in stream_events("wss://api.example.com"):
+    print "Received: " + event
+```
+
+**Generator expressions (lazy comprehensions):**
+```fusion
+let squares be (x * x for each x in 1 to 10)    # Generator, not list
+let evens be (x for each x in items where x % 2 == 0)
+```
+
+**Cross-target compilation:**
+| Target | Strategy |
+|--------|----------|
+| Python | `yield` keyword — native 1:1 mapping |
+| JavaScript | `function*` + `yield` (sync) / `async function*` + `yield` (async) |
+| C# | `yield return` with `IEnumerable<T>` / `IAsyncEnumerable<T>` |
+| Ruby | `yield` / `Enumerator` |
+| Go | Channel + goroutine (generates a channel, sends values in goroutine) |
+| Rust | `impl Iterator<Item=T>` / `async_stream` crate |
+
+---
+
+## 29. FLOW-SENSITIVE REFINEMENT TYPING
+
+TypeScript/Kotlin-style smart type narrowing. Once you check a variable's type or nullability, the compiler **automatically refines** its type inside that block — no redundant casts needed.
+
+```fusion
+let user_name: string | null be get_input()
+
+# After this check, user_name is refined to just 'string'
+if user_name is not null:
+    # Compiler guarantees user_name is string inside this block!
+    print user_name upper                 # Safe — no null error
+    let length be length of user_name     # Safe
+
+# Similarly for type checks
+let value: int | string | list be get_value()
+
+if value is a string:
+    print value upper                      # Refined: only string methods available
+    print length of value                  # Safe
+or if value is an int:
+    print value + 10                       # Refined: only int operations
+or:
+    print first of value                   # Refined: must be list
+
+# Negated refinement
+if value is not a list:
+    let str_val be value as string         # Safe — must be string|int
+
+# Refinement with guard
+let data: dict | null be load_config()
+guard data is not null else:
+    return "No config found"
+# After guard, data is refined to dict everywhere below
+print data["key"]                          # Safe
+```
+
+**Advanced narrowing patterns:**
+```fusion
+# Discriminated unions with record types
+define record Success<T> with value: T
+define record Failure with error: string
+type Result<T> be Success<T> | Failure
+
+let result: Result<int> be do_something()
+whenever result is a Success:
+    print "Got: " + result.value           # Refined — value property accessible
+or:
+    print "Error: " + result.error         # Refined — error property accessible
+
+# Array filtering refinement
+let items: list of int? be [1, null, 3, null, 5]
+filter items where x is not null:
+    # Inside filter, x is refined to int
+    print x * 2
+```
+
+---
+
+## 30. UNIFORM FUNCTION CALL SYNTAX (UFCS)
+
+Any function can be called as if it were a **method on its first argument**. This eliminates the friction between free-standing functions and object methods — like Nim, D, and Rust's method syntax.
+
+```fusion
+define function calculate_tax with amount: float -> float:
+    return amount * 0.12
+
+define function double with value: int -> int:
+    return value * 2
+
+define function greet with name: string -> string:
+    return "Hello, " + name
+
+# ALL of these pairs evaluate identically!
+let choice_a be calculate_tax(100)          # Traditional call
+let choice_b be 100.calculate_tax()          # UFCS — method-style
+
+let a be double(21)                          # Traditional
+let b be 21.double()                         # UFCS
+
+let msg1 be greet("Alice")                   # Traditional
+let msg2 be "Alice".greet()                  # UFCS
+
+# Chaining with UFCS (pipeline style!)
+let result be 100
+    .calculate_tax()                         # 12.0
+    .double()                                # 24.0
+
+# Works with any type, anywhere
+let numbers be [1, 2, 3, 4, 5]
+let evens be numbers.filter(x > 2).map(x * 2)
+let total be numbers.fold(add).first()
+```
+
+**Cross-target compilation:**
+| Target | Strategy |
+|--------|----------|
+| All targets | UFCS is a source-to-source transform: `x.f(args)` → `f(x, args)`. The compiler rewrites before emitting target code. Works universally. |
+| Rust | Maps naturally to method syntax (`impl` blocks or free functions called as methods) |
+| D / Nim | Native language feature — direct 1:1 |
+| C++ | ADL (Argument-Dependent Lookup) provides partial native support |
+
+---
+
+## 31. COMPILE-TIME MACROS (METAPROGRAMMING)
+
+Code that writes code. Macros execute **inside the compiler** at compile time to generate boilerplate, derive traits, or create domain-specific syntax — like Lisp macros, Rust `macro_rules!`, or C++ templates.
+
+```fusion
+# Simple macro — generates getter methods for a record
+macro create_getters for Point:
+    generate:
+        define function get_x -> int:
+            return this.x
+        define function get_y -> int:
+            return this.y
+
+# Usage — expands at compile time to the generated methods
+define record Point with x: int, y: int
+create_getters for Point                     # Injects get_x() and get_y()
+
+let p be Point(x: 10, y: 20)
+print p.get_x()                              # 10
+```
+
+**Advanced macro with AST inspection:**
+```fusion
+# Macro that inspects the target type and generates serialization code
+macro auto_serialize for T:
+    # $fields is a compile-time list of the record's field names
+    generate:
+        define function to_json -> string:
+            let parts be []
+            for each field in $fields:       # Compile-time loop!
+                push into parts: "\"" + field + "\": " + string(this[field])
+            return "{" + join parts with ", " + "}"
+        
+        define function from_json with data: string -> T:
+            # Generated per-type at compile time
+            ...
+
+define record User with name: string, age: int, email: string
+auto_serialize for User                      # Generates to_json() and from_json()
+
+let user be User(name: "Alice", age: 30, email: "alice@example.com")
+print user.to_json()                         # {"name": "Alice", "age": 30, "email": "alice@example.com"}
+```
+
+**Attribute-style macros (decorator-like):**
+```fusion
+@derive(Serialize, Deserialize)
+define record Point with x: int, y: int
+
+@measure_time
+define function expensive_computation:
+    # Compiler wraps this in timing instrumentation
+    ...
+
+@memoize(cache_size: 256)
+define function fib with n: int -> int:
+    return fib(n-1) + fib(n-2) if n > 1 else n
+```
+
+---
+
+## 32. OPERATOR OVERLOADING
+
+Give native math symbols (+, -, *, /, ==, <, etc.) custom behavior for your own types — like C++ operator overloading or Python's `__add__`/`__mul__` magic methods.
+
+```fusion
+define record Point with x: int, y: int
+
+# Define custom + operator for Point
+define operator + with a: Point, b: Point -> Point:
+    return Point(x: a.x + b.x, y: a.y + b.y)
+
+# Define custom - operator for Point
+define operator - with a: Point, b: Point -> Point:
+    return Point(x: a.x - b.x, y: a.y - b.y)
+
+# Define custom * (scalar multiplication)
+define operator * with a: Point, s: int -> Point:
+    return Point(x: a.x * s, y: a.y * s)
+
+# Define comparison
+define operator == with a: Point, b: Point -> bool:
+    return a.x == b.x and a.y == b.y
+
+define operator < with a: Point, b: Point -> bool:
+    return (a.x * a.x + a.y * a.y) < (b.x * b.x + b.y * b.y)
+
+# Natural usage!
+let p1 be Point(x: 1, y: 2)
+let p2 be Point(x: 3, y: 4)
+let sum be p1 + p2                           # Point(x: 4, y: 6)
+let diff be p2 - p1                          # Point(x: 2, y: 2)
+let scaled be p1 * 5                         # Point(x: 5, y: 10)
+
+if p1 < p2:
+    print "p1 is closer to origin"
+```
+
+**Overloadable operators:**
+```fusion
+# Arithmetic:   +  -  *  /  //  %  ^  **
+# Comparison:   ==  !=  <  >  <=  >=
+# Unary:        - (negate)  ~ (bitwise not)
+# Index:        [] (subscript get/set)
+# Call:         () (callable objects)
+# Conversion:   as (type conversion)
+
+# Index operator overload
+define operator [] with self: Vector, index: int -> int:
+    return self.data[index]
+
+define operator []= with self: Vector, index: int, value: int:
+    set self.data[index] to value
+
+# Call operator (functors)
+define operator () with self: Multiplier, x: int -> int:
+    return self.factor * x
+
+let mul be Multiplier(factor: 10)
+print mul(5)                                 # 50 — called like a function!
+```
+
+**Cross-target compilation:**
+| Target | Strategy |
+|--------|----------|
+| Python | `__add__`, `__mul__`, `__eq__`, `__lt__`, `__getitem__`, `__setitem__`, `__call__` |
+| C++ | `operator+`, `operator*`, `operator==`, `operator<`, `operator[]`, `operator()` |
+| C# | `operator +`, `operator *`, `operator ==`, `operator <` |
+| Rust | `std::ops::Add`, `Mul`, `PartialEq`, `PartialOrd`, `Index`, `IndexMut`, `Fn` |
+| Kotlin | `plus`, `times`, `compareTo`, `get`, `set`, `invoke` |
+| Swift | `static func +`, `static func ==`, `subscript`, `@dynamicCallable` |
+| Ruby | `+`, `*`, `==`, `<`, `[]`, `[]=`, `call` |
+| Java | Manual interface (Java has no operator overloading) — generates `plus()`, `times()`, etc. |
+| Go | Manual methods only (Go has no operator overloading) — generates `Add()`, `Mul()`, etc. |
+
+---
+
+## 33. CONCURRENCY CHANNELS (GO-STYLE ROUTINES)
+
+Lightweight concurrent tasks (green threads) communicating through **typed channels** — safe, lock-free message passing. Channels guarantee no shared-memory race conditions.
+
+```fusion
+# Create a typed channel
+let messages be create channel of string      # Channel that carries strings
+let results be create channel of int          # Channel that carries ints
+let events be create channel of dict          # Channel that carries dicts
+
+# Launch a background worker (lightweight thread)
+spin up background_worker:
+    for i from 1 to 10:
+        send "Message #" + string(i) through messages
+    close messages                             # Signal: no more messages
+
+# Launch another worker
+spin up processor:
+    as long as messages is open:
+        listen to messages with msg:
+            let upper_msg be msg.upper()
+            send upper_msg through results
+    close results
+
+# Main thread — receive results
+listen to results with result:
+    print result
+# Prints: MESSAGE #1, MESSAGE #2, ..., MESSAGE #10
+```
+
+**Channel patterns:**
+```fusion
+# Buffered channels (don't block until buffer is full)
+let pipeline be create channel of int with capacity 100
+
+# Select / multiplex (wait on multiple channels)
+select:
+    case msg from channel_a:
+        print "From A: " + msg
+    case msg from channel_b:
+        print "From B: " + msg
+    case after 5 seconds:
+        print "Timed out!"
+    default:
+        print "Nothing ready yet"
+
+# Fan-out (one producer → many consumers)
+spin up producer:
+    for each item in data:
+        send item through work_queue
+    close work_queue
+
+for i from 1 to 4:                             # Launch 4 workers
+    spin up worker + string(i):
+        listen to work_queue with task:
+            process task
+
+# Fan-in (many producers → one consumer)
+let merged be create channel of string
+spin up source_a: ... send through merged ...
+spin up source_b: ... send through merged ...
+spin up source_c: ... send through merged ...
+
+# Consumer reads from all sources
+listen to merged with data:
+    print "Received: " + data
+
+# Atomic counters and shared state (when needed)
+let counter be create shared int starting at 0
+
+spin up incrementer:
+    repeat 1000 times:
+        atomically increase counter by 1      # Thread-safe
+```
+
+**Cross-target compilation:**
+| Target | Strategy |
+|--------|----------|
+| Go | **Native goroutines + channels** — direct 1:1 mapping! `spin up` → `go func()`, `send through` → `ch <-`, `listen to` → `<-ch`, `select` → `select` |
+| Python | `asyncio.Queue` + `asyncio.create_task()` for async channels; `threading.Thread` + `queue.Queue` for sync |
+| JavaScript | `Promise` + async generators for async; `Worker` threads for true parallelism |
+| Kotlin | `kotlinx.coroutines` + `Channel<T>` — very close to native |
+| Rust | `tokio::spawn` + `tokio::sync::mpsc::channel` or `std::sync::mpsc` |
+| C# | `Task.Run` + `System.Threading.Channels.Channel<T>` |
+| Java | `CompletableFuture` + `java.util.concurrent.BlockingQueue` |
+| C++ | `std::async` + thread-safe queues, or `boost::fiber` for lightweight |
+
+---
+
+## 34. v0.9.0 IMPLEMENTATION NOTES
+
+These advanced systems (§35–41) are **forward-looking specifications**. The following keywords will need new token types and parser support before they can be compiled:
+
+| Keyword | Current tokens.py status | Risk |
+|---------|--------------------------|------|
+| `lifetime` | ❌ Not in tokens.py | Safe — new token needed |
+| `relinquish` | ❌ Not in tokens.py | Safe — new token needed |
+| `ownership` | ❌ Not in tokens.py | Safe — new token needed |
+| `borrow` | ❌ Not in tokens.py | Safe — new token needed |
+| `location` | ❌ Not in tokens.py | Safe — new token needed |
+| `offset` | ❌ Not in tokens.py | Safe — new token needed |
+| `assembly` | ❌ Not in tokens.py | Safe — new token needed |
+| `interrogate` | ⚠️ Maps to `SEARCH` | **COLLISION** — needs new `REFLECT` token or contextual parser disambiguation |
+| `mapping` | ❌ Not in tokens.py | Safe — new token needed |
+| `bidirectional` | ❌ Not in tokens.py | Safe — new token needed |
+| `detach` | ❌ Not in tokens.py | Safe — new token needed |
+| `suspend` | ❌ Not in tokens.py | Safe — new token needed |
+| `structural` | ❌ Not in tokens.py | Safe — new token needed |
+| `factory` | ⚠️ Maps to `FUNCTION` | Low risk — contextual ("structural factory" vs standalone) |
+| `transmit` | ❌ Not in tokens.py | Safe — new token needed |
+| `capturing` | ❌ Not in tokens.py | Safe — new token needed |
+| `read_only` | ❌ Not in tokens.py | Safe — multi-word token needed |
+| `creation` | ❌ Not in tokens.py | Safe — new token needed |
+
+> **Note:** `interrogate` currently maps to `TokenType.SEARCH` (used for natural search like "query database"). For reflection-style "interrogate layout of...", a new `TokenType.REFLECT` or parser-level disambiguation is required. Similarly, `any` in §41's `any child_class` collides with `TokenType.ANY`. These are documented here for the implementation phase.
+
+---
+
+## 35. MEMORY TRACKING & MANAGEMENT (RUST BORROW CHECKER TARGET)
+
+FusionBoa introduces explicit scope tracking and ownership handshakes to support deterministic memory safety without a runtime garbage collector. These compile down to Rust's borrow checker, C++ RAII, or manual memory management in C.
+
+```fusion
+# Establish an explicit memory boundary scope tag
+with lifetime 'a:
+    let message be "System Active"
+    # message is valid only within this scope
+
+# Formally hand over ownership of data to a separate execution sequence
+let system_log be "Boot sequence complete"
+relinquish ownership of system_log to monitor_process
+# system_log is now invalid — compiler enforces this!
+
+# Borrow data read-only without taking permanent ownership
+let data_stream be open_sensor_port()
+borrow read_only data_stream as stream_view
+# stream_view can read, but cannot modify or delete
+# data_stream retains ownership
+```
+
+**Ownership rules enforced at compile time:**
+```fusion
+# Move semantics: ownership transfers
+let original be "Hello"
+let moved be original                    # ownership moves
+# print original                          # COMPILE ERROR: original was moved
+
+# Borrow: multiple readers, no writers
+let shared_data be [1, 2, 3]
+borrow read_only shared_data as view_a
+borrow read_only shared_data as view_b    # OK: multiple readers allowed
+# borrow mutable shared_data as edit     # COMPILE ERROR: can't write while reading
+
+# Lifetime annotations for complex scopes
+with lifetime 'scope:
+    let resource be allocate_buffer(1024)
+    relinquish ownership of resource to cleanup_handler
+    # Guaranteed: resource freed exactly once
+```
+
+**Cross-target compilation:**
+| Target | Strategy |
+|--------|----------|
+| Rust | Native borrow checker — `&'a T`, `Box<T>`, `Rc<T>`, `Arc<T>`, `move` semantics |
+| C++ | `std::unique_ptr<T>`, `std::shared_ptr<T>`, `const T&`, `std::move` |
+| Go | GC simplifies — ownership annotations become no-ops; `borrow` → pointer copy |
+| Python/JS | Ownership is documentation-only; all objects are reference-counted/GC'd |
+| C | `malloc`/`free` with compile-time lifetime verification, `const T*` for borrow |
+
+---
+
+## 36. HARDWARE INTEGRATION & ADDRESSING (C++ NATIVE POINTER TARGET)
+
+Provides direct memory location lookups and low-level execution for raw high-performance embedded systems logic. These primitives map to C/C++ pointer arithmetic, inline assembly, and memory-mapped I/O.
+
+```fusion
+# Locate the precise physical hardware memory address of a variable
+let core_variable be 0x7FFF_4000
+let memory_lock be location of core_variable
+# memory_lock now holds the raw numerical address
+
+# Direct hardware memory manipulation via numerical offset pointers
+let device_base be location of hardware_register
+set value at location device_base with offset 4 to 0xFF
+# Writes 0xFF to address (device_base + 4)
+
+# Read from a specific memory address
+let sensor_value be value at location device_base with offset 8
+# Reads from address (device_base + 8)
+
+# Inject inline raw assembly commands straight to the physical microprocessor
+execute assembly:
+    "MOV RAX, 60"
+    "MOV RDI, 0"
+    "SYSCALL"
+# Direct assembly — zero abstraction overhead
+```
+
+**Pointer safety modes:**
+```fusion
+# Safe mode (default): pointers are checked, bounds-verified
+with safe pointers:
+    let addr be location of buffer
+    set value at location addr to 42       # Bounds-checked
+
+# Unsafe mode: raw access, no checks — for embedded/kernel code
+with unsafe memory:
+    let raw_ptr be location of mmio_base
+    set value at location raw_ptr with offset 0x1000 to 0xDEAD
+    execute assembly: "CLI"                # Disable interrupts
+    execute assembly: "HLT"                # Halt CPU
+```
+
+**Cross-target compilation:**
+| Target | Strategy |
+|--------|----------|
+| C++ | `&var`, `uintptr_t`, `reinterpret_cast<T*>`, `__asm__ __volatile__`, placement new |
+| C | `&var`, `uintptr_t`, pointer arithmetic, `asm()` with GCC/Clang inline asm |
+| Rust | `unsafe { ptr::addr_of!(var) }`, `core::ptr::write()`, `asm!()` macro |
+| Go | `unsafe.Pointer`, `uintptr`, assembly via `.s` files (limited) |
+| Python | `ctypes.c_void_p`, `ctypes.memmove` (very limited, requires FFI) |
+| JS/Java/C# | No native pointer support — compile error or `Unsafe`/`sun.misc.Unsafe` wrapper |
+
+> **⚠️ Warning:** Hardware addressing and assembly features are **target-gated**. Compiling to non-C/C++/Rust targets with these features will produce compile-time errors or explicit stubs.
+
+---
+
+## 37. DYNAMIC TYPE STRUCTURING (TYPESCRIPT MAPPED TYPES TARGET)
+
+Enables type configurations to evaluate, loop through, and modify existing data structures during the compiler's semantic checking phase — like TypeScript's mapped types and conditional types.
+
+```fusion
+# Crawl an existing record layout and dynamically make all its fields read-only
+define record UserRecord with name: string, age: int, email: string
+
+define type ImmutableUser by mapping fields of UserRecord to be constant
+# ImmutableUser = { readonly name: string, readonly age: int, readonly email: string }
+
+# Build a conditional type evaluation blueprint
+define type NetworkResponse be when Data matches ErrorState then FailedState or SuccessState
+
+# Map fields to optional
+let partial_user be mapping fields of UserRecord to be optional
+# { name?: string, age?: int, email?: string }
+
+# Transform field types
+let stringified_user be mapping fields of UserRecord converting each to string
+# { name: string, age: string, email: string }
+
+# Pick specific fields from a type
+define type UserPreview be pick name, email from UserRecord
+# { name: string, email: string }
+
+# Omit specific fields
+define type UserSafe be omit password, token from UserRecord
+```
+
+**Cross-target compilation:**
+| Target | Strategy |
+|--------|----------|
+| TypeScript | Native mapped types: `type T = { [K in keyof U]: ... }`, conditional types, `Pick<T>`, `Omit<T>`, `Partial<T>`, `Readonly<T>` |
+| Python | `typing.TypedDict` + decorators for read-only, `dataclass(frozen=True)`, `Protocol` |
+| Kotlin | Inline classes, type aliases, sealed interfaces with smart derivation |
+| C++ | `using` aliases, template metaprogramming with `std::conditional_t`, `std::enable_if_t` |
+| Rust | `type` aliases, `PhantomData`, trait bounds, derive macros for field transformation |
+| Go | Struct embedding + code generation (Go lacks mapped types) |
+| Java | Annotation processing + code generation (Java lacks mapped types) |
+
+---
+
+## 38. RUNTIME SYSTEM INSPECTION (JAVA REFLECTION TARGET)
+
+Allows an actively running application to programmatically analyze its own architecture and discover hidden structures dynamically — like Java reflection or Python's `inspect` module.
+
+```fusion
+# Programmatically inspect an object's structural blueprint at runtime
+let active_session be Session(id: 42, user: "Alice")
+interrogate layout of active_session capturing fields_list
+# fields_list = ["id", "user"]
+
+# Inspect methods available on an object
+interrogate methods of active_session capturing methods_list
+# methods_list = ["init", "get_id", "set_id", "get_user", ...]
+
+# Invoke a method dynamically by looking up its text string name
+let dynamic_suffix be "_backup"
+execute method named "calculate" + dynamic_suffix on user_profile using system_context
+# Calls user_profile.calculate_backup(system_context) at runtime
+
+# Check if a method exists before calling
+if active_session responds to "validate":
+    execute method named "validate" on active_session
+
+# Get/set fields by name dynamically
+let field_value be value of "email" from user_record
+set field "email" on user_record to "new@example.com"
+```
+
+**Cross-target compilation:**
+| Target | Strategy |
+|--------|----------|
+| Java | Native reflection: `Class<?>`, `getDeclaredFields()`, `getDeclaredMethods()`, `Method.invoke()` |
+| Python | `getattr()`, `setattr()`, `hasattr()`, `inspect.getmembers()`, `dir()` — very natural |
+| JavaScript | `Object.keys()`, `obj[methodName]()`, `Reflect.get()`, `Reflect.set()`, `Proxy` |
+| C# | `System.Reflection`: `typeof(T).GetFields()`, `GetMethod()`, `MethodInfo.Invoke()` |
+| Kotlin | Kotlin reflection: `KClass`, `memberProperties`, `call()`, `callBy()` |
+| Go | `reflect` package: `reflect.TypeOf()`, `reflect.ValueOf()`, `FieldByName()` |
+| Rust | Limited — `std::any::TypeId`, `Any` trait for downcast; full reflection requires proc macros |
+| C++ | Limited — RTTI with `typeid`, `dynamic_cast`; full reflection requires code generation |
+
+---
+
+## 39. HARDWARE CONCURRENCY MANAGEMENT (GO CHANNELS TARGET)
+
+Provides native synchronization logic for fast, lightweight hardware threads communicating via memory paths. Extends the existing channel primitives (section 33) with bidirectional channels, detached tasks, and hardware-aware scheduling.
+
+```fusion
+# Allocate a dedicated, synchronized communication pipeline
+let system_channel be create bidirectional channel of message
+# Bidirectional: both ends can send AND receive
+
+# Spin up a lightweight thread that monitors data streams in the background
+detach async task using data_feed:
+    transmit "Data Received" onto system_channel
+    # Task runs independently — won't block main thread
+
+# Attach a timeout to channel operations
+listen to system_channel with msg within 100 milliseconds:
+    process msg
+or timeout:
+    handle_missed_message()
+
+# Priority channels (hardware interrupt level)
+let urgent_signals be create high priority channel of signal
+
+spin up interrupt_handler:
+    listen to urgent_signals with signal:
+        execute assembly: "STI"            # Re-enable interrupts after handling
+
+# Direct thread affinity (pin goroutine/thread to CPU core)
+spin up cpu_worker pinned to core 3:
+    # This thread runs exclusively on CPU core 3
+    ...
+```
+
+**Cross-target compilation:**
+| Target | Strategy |
+|--------|----------|
+| Go | `chan T` (bidirectional), `go func()`, `select` with `time.After()`, no native core pinning |
+| Rust | `tokio::spawn`, `tokio::sync::broadcast` (bidirectional), `core_affinity` crate for pinning |
+| C++ | `std::thread` + `std::sync::mpsc::channel`, `std::thread::hardware_concurrency()`, CPU affinity via OS |
+| C | `pthread_create`, `pthread_setaffinity_np`, POSIX message queues |
+| Python | `asyncio.Queue`, `threading.Thread`, `multiprocessing.Pipe` (bidirectional), `os.sched_setaffinity` |
+| Kotlin | `kotlinx.coroutines`, `Channel<T>` (bidirectional), `newFixedThreadPoolContext` |
+
+---
+
+## 40. HYDRATION STATE HOOKS (REACT CONCURRENT ENGINE TARGET)
+
+Coordinates asynchronous user interface components by freezing template rendering until external data resources load safely — like React Suspense, Vue's async components, or Svelte's await blocks.
+
+```fusion
+# Instruct the interface layer to hold rendering until a data stream is loaded
+suspend interface rendering using api_stream:
+    render component UserDashboard with user_data
+
+# Multiple suspense boundaries
+suspend interface rendering using profile_stream:
+    render component ProfileCard with profile
+or fallback:
+    render component LoadingSpinner
+
+# Nested suspension with independent loading states
+suspend interface rendering using header_stream:
+    render component PageHeader with header_data
+
+suspend interface rendering using body_stream:
+    render component ContentBody with articles
+or fallback:
+    render component SkeletonPlaceholder
+
+# Stream data in progressively (React Server Components style)
+suspend interface streaming using data_feed:
+    on each chunk:
+        render component LiveChart updating with chunk
+    on complete:
+        render component SummaryView with full_dataset
+```
+
+**Cross-target compilation:**
+| Target | Strategy |
+|--------|----------|
+| React/JSX | `<Suspense fallback={<Spinner />}>`, React.lazy(), React Server Components, streaming SSR |
+| Vue | `<Suspense>`, `defineAsyncComponent()`, `<template #fallback>` |
+| Svelte | `{#await promise}...{:then value}...{:catch error}...{/await}` |
+| Angular | `@defer` blocks, `@loading`, `@placeholder`, `@error` templates |
+| SwiftUI | `AsyncImage`, `.task {}` modifier, `ProgressView` |
+| Flutter | `FutureBuilder`, `StreamBuilder`, `AsyncSnapshot` |
+| Non-UI targets | Suspense/hydration becomes no-ops — generated as direct assignment or ignored |
+
+---
+
+## 41. META-FACTORY GENERATION (PYTHON METACLASS TARGET)
+
+Allows developers to write master blueprints that intercept and modify how standard class objects are created across a project — like Python metaclasses, Ruby's method_missing, or JavaScript Proxy construct traps.
+
+```fusion
+# Define a master class-factory controller hook
+define structural factory CoreModel:
+    before creation of any child_class:
+        automatically append field creation_timestamp: int
+
+# Any class that uses CoreModel gets the timestamp automatically
+define class User is built by CoreModel:
+    fields: name: string, age: int
+# User automatically has: name, age, creation_timestamp
+
+# Lifecycle hooks
+define structural factory AuditedModel:
+    before creation of any child_class:
+        automatically append field created_at: datetime
+        automatically append field updated_at: datetime
+    
+    on access to any field:
+        log "Field {field_name} was read"
+    
+    on mutation of any field:
+        update this.updated_at to current_time()
+    
+    after destruction:
+        log "Record {this.id} was deleted"
+
+# Attribute validation at class creation time
+define structural factory ValidatedModel:
+    before creation of any child_class:
+        for each field in child_class.fields:
+            if field has no default and field is not optional:
+                error "Field {field.name} must have a default value"
+
+# Singleton factory pattern
+define structural factory Singleton:
+    before creation:
+        if Singleton._instance exists:
+            return Singleton._instance
+    after creation:
+        store this in Singleton._instance
+```
+
+**Cross-target compilation:**
+| Target | Strategy |
+|--------|----------|
+| Python | `type.__new__`, `__init_subclass__`, `__set_name__`, `@dataclass(frozen=True)`, metaclass hooks |
+| JavaScript | `Proxy` with `construct` trap, `Object.defineProperty()`, class decorators (TC39 stage 3) |
+| Ruby | `method_missing`, `define_method`, `included`/`extended` hooks, `Class.new` with block |
+| Kotlin | Delegated properties (`by lazy`, `Delegates.observable`), `companion object`, inline functions |
+| Swift | Property wrappers (`@propertyWrapper`), `willSet`/`didSet` observers, `@dynamicMemberLookup` |
+| Rust | Proc macros (`#[derive(...)]`), custom `#[attribute]` macros — compile-time factory |
+| C++ | CRTP (Curiously Recurring Template Pattern), `std::enable_if`, template metaprogramming |
+| Java | Annotation processing (APT), `java.lang.reflect.Proxy`, bytecode manipulation (ASM, ByteBuddy) |
+| Go | Code generation with `go:generate`, struct embedding (Go has no metaclasses) |
+
+---
+
+## 42. QUICK REFERENCE — ALL COMMANDS
 
 ```fusion
 # === DECLARING VARIABLES (15+ ways!) ===
@@ -1269,6 +2065,84 @@ items has x | items holds x | items contains x
 please print x              # "please" is ignored
 kindly let x be 5            # "kindly" is ignored
 
+# === v0.9.0 ADVANCED SYSTEMS (7 new subsystems!) ===
+
+# -- Memory Management (Rust borrow checker) --
+with lifetime 'a: ...                    # Scope-bound lifetime annotation
+relinquish ownership of x to y          # Move semantics
+borrow read_only data as view          # Immutable borrow
+
+# -- Hardware Integration (C++ pointers) --
+let addr be location of variable        # Get raw memory address
+set value at location addr with offset 4 to 0xFF
+read value at location addr with offset 8
+execute assembly: "MOV RAX, 60"         # Inline assembly
+with unsafe memory: ...                 # Unsafe pointer block
+
+# -- Dynamic Type Structuring (TS mapped types) --
+define type T by mapping fields of U to be constant
+define type T be when A matches B then C or D
+pick name, email from UserRecord       # Pick<T>
+omit password from UserRecord          # Omit<T>
+
+# -- Runtime Inspection (Java reflection) --
+interrogate layout of obj capturing fields   # Get field names
+execute method named "x" on obj using ctx    # Dynamic dispatch
+if obj responds to "method": ...            # Duck-type check
+
+# -- Hardware Concurrency (Go channels extended) --
+let ch be create bidirectional channel of T   # Two-way channel
+detach async task using feed: ...            # Detached goroutine
+spin up worker pinned to core 3: ...         # CPU affinity
+
+# -- Hydration State Hooks (React Suspense) --
+suspend interface rendering using stream:     # Lazy loading
+    render component Card with data
+or fallback: render component Spinner
+
+# -- Meta-Factory Generation (Python metaclass) --
+define structural factory CoreModel:          # Metaclass
+define class User is built by CoreModel: ...  # Factory-built class
+
+# === v0.8.0 GOD MODE (7 paradigms!) ===
+
+# -- Multiple Dispatch --
+define function collide with a: Warrior, b: Dragon: ...
+define function collide with a: Wizard, b: Spell: ...
+collide hero with enemy           # Compiler picks based on ALL argument types
+
+# -- Generators & Yielding --
+define function stream -> generator:    yield value
+define async function events:           yield await data
+for await each x in stream: ...
+
+# -- Flow-Sensitive Typing --
+if x is not null: ...              # x refined to non-null in block
+if x is a string: ...              # x refined to string in block
+guard data is not null else: ...   # data refined globally after guard
+
+# -- UFCS (Uniform Function Call Syntax) --
+100.calculate_tax()                # Same as calculate_tax(100)
+"Alice".greet()                    # Same as greet("Alice")
+numbers.filter(x>2).map(x*2)      # Chain any function as method
+
+# -- Compile-Time Macros --
+macro getters for Point:           # Code that generates code
+    generate: define function get_x ...
+@derive(Serialize)                 # Attribute-style macro
+define record User with name: string, age: int
+
+# -- Operator Overloading --
+define operator + with a: Point, b: Point -> Point: ...
+define operator [] with self: Vector, index: int -> int: ...
+define operator () with self: Fn, x: int -> int: ...  # Callable objects
+
+# -- Concurrency Channels --
+let ch be create channel of string              # Typed channel
+spin up worker: ... send msg through ch ...    # Goroutine
+listen to ch with msg: ...                      # Receive
+select: case msg from ch_a: ... case after 5s: ...
+
 # === NATURAL ENGLISH (Parser ignores 'the') ===
 let the x be 5               # "the" skipped
 for each item in the list:   # reads like English!
@@ -1277,5 +2151,5 @@ for each item in the list:   # reads like English!
 
 ---
 
-**FusionBoa Language v0.7.0**
-*708 keywords · 228 token types · 500+ aliases · 23 compile targets · 200/200 tests*
+**FusionBoa Language v0.9.0**
+*708 keywords · 228 token types · 500+ aliases · 23 compile targets · 207/207 tests*
