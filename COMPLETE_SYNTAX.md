@@ -3,7 +3,7 @@
 **Version 0.9.0 "Insane Mode" — July 2026**
 
 A polyglot programming language with English-like syntax. Write once, compile to 23 targets.
-**657 keywords**, **228 token types**, **490 syntax aliases**, **74+ language features**.
+**725 keywords**, **228 token types**, **550+ syntax aliases**, **74+ language features**.
 
 ---
 
@@ -2152,4 +2152,4 @@ for each item in the list:   # reads like English!
 ---
 
 **FusionBoa Language v0.9.0**
-*657 keywords · 228 token types · 490 aliases · 23 compile targets · 207/207 tests*
+*725 keywords · 228 token types · 550+ aliases · 23 compile targets · 207/207 tests*

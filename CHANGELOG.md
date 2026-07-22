@@ -27,7 +27,7 @@ All notable changes to FusionBoa will be documented in this file.
 ## [0.7.0] — 2026-07-01
 
 ### Added
-- 657 keywords, 228 token types, 490 syntax aliases
+- 725 keywords, 228 token types, 550+ syntax aliases
 - 23 compile targets (15 programming languages + 8 markup/data formats)
 - Complete English-like syntax reference (`COMPLETE_SYNTAX.md`)
 - Natural language patterns (60+ categories)
