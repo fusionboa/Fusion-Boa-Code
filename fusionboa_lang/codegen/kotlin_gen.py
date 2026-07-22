@@ -61,6 +61,10 @@ class KotlinGenerator:
             WithStatement: self._gen_with_statement,
             DecoratorStatement: lambda n: self._indent() + f"// @{n.name}",
             StaticMethodDeclaration: self._gen_static_method,
+            # v0.5.0 Masterpiece
+            RecordDefinition: self._gen_record_definition,
+            PropertyDefinition: self._gen_property_definition,
+            ExtensionDefinition: self._gen_extension_definition,
         }
         gen_func = gen_map.get(type(node))
         if gen_func: return gen_func(node)
@@ -359,6 +363,55 @@ class KotlinGenerator:
         for i, member in enumerate(node.members):
             lines.append(f"    {member}({i}),")
         lines.append("}")
+        return "\n".join(lines)
+
+    # ---- v0.5.0 Masterpiece Codegen ----
+
+    def _gen_record_definition(self, node: RecordDefinition) -> str:
+        """define record -> Kotlin data class"""
+        lines = [f"data class {node.name}("]
+        field_strs = []
+        for fname, ftype, fdefault in node.fields:
+            kt_type = {"int": "Int", "integer": "Int", "float": "Double",
+                       "string": "String", "bool": "Boolean", "boolean": "Boolean",
+                       "any": "Any"}.get(ftype, "Any")
+            default = f" = {self._gen_expression(fdefault)}" if fdefault is not None else ""
+            field_strs.append(f"    val {fname}: {kt_type}{default}")
+        lines.append(",\n".join(field_strs))
+        lines.append(")")
+        return "\n".join(lines)
+
+    def _gen_property_definition(self, node: PropertyDefinition) -> str:
+        """define property -> Kotlin property with custom getter/setter"""
+        lines = []
+        kt_type = "Any"
+        if node.type_annotation:
+            kt_type = {"int": "Int", "integer": "Int", "float": "Double",
+                       "string": "String", "bool": "Boolean", "any": "Any"}.get(node.type_annotation.type_name, "Any")
+        lines.append(f"val {node.name}: {kt_type}" if not node.setter_body else f"var {node.name}: {kt_type}")
+        if node.getter_body:
+            lines[-1] += ""
+            lines.append("    get() {")
+            for stmt in node.getter_body:
+                lines.append(f"        {self._gen_statement(stmt)}")
+            lines.append("    }")
+        if node.setter_body:
+            lines.append("    set(value) {")
+            for stmt in node.setter_body:
+                lines.append(f"        {self._gen_statement(stmt)}")
+            lines.append("    }")
+        return "\n".join(lines)
+
+    def _gen_extension_definition(self, node: ExtensionDefinition) -> str:
+        """define extension on Type -> Kotlin extension functions"""
+        lines = []
+        for stmt in node.body:
+            if isinstance(stmt, FunctionDefinition):
+                params = ", ".join(f"{p}: Any" for p in stmt.parameters)
+                lines.append(f"fun {node.target_type}.{stmt.name}({params}) {{" if params else f"fun {node.target_type}.{stmt.name}() {{")
+                for s in stmt.body:
+                    lines.append(f"    {self._gen_statement(s)}")
+                lines.append("}")
         return "\n".join(lines)
 
 

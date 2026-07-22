@@ -68,6 +68,10 @@ class JavaScriptGenerator:
             WithStatement: self._gen_with_statement,
             DecoratorStatement: self._gen_decorator_statement,
             StaticMethodDeclaration: self._gen_static_method_declaration,
+            # v0.5.0 Masterpiece
+            RecordDefinition: self._gen_record_definition,
+            PropertyDefinition: self._gen_property_definition,
+            ExtensionDefinition: self._gen_extension_definition,
         }
         gen_func = gen_map.get(type(node))
         if gen_func: return gen_func(node)
@@ -485,7 +489,62 @@ class JavaScriptGenerator:
             return f"(function*() {{ for (let {node.variable} of {iterable}) {{ if ({cond}) yield {expr}; }} }})()"
         return f"(function*() {{ for (let {node.variable} of {iterable}) {{ yield {expr}; }} }})()"
 
+    # ---- v0.5.0 Masterpiece Codegen ----
 
+    def _gen_record_definition(self, node: RecordDefinition) -> str:
+        """define record -> JS immutable class with Object.freeze"""
+        lines = [self._indent() + f"class {node.name} {{"]
+        self.indent_level += 1
+        # Constructor with fields
+        if node.fields:
+            field_names = ", ".join(fname for fname, _, _ in node.fields)
+            fparams = ", ".join(f"{fname} = null" for fname, _, _ in node.fields)
+            lines.append(self._indent() + f"constructor({fparams}) {{")
+            self.indent_level += 1
+            for fname, _, _ in node.fields:
+                lines.append(self._indent() + f"this.{fname} = {fname};")
+            lines.append(self._indent() + "Object.freeze(this);")
+            self.indent_level -= 1
+            lines.append(self._indent() + "}")
+        self.indent_level -= 1
+        lines.append(self._indent() + "}")
+        return "\n".join(lines)
+
+    def _gen_property_definition(self, node: PropertyDefinition) -> str:
+        """define property -> JS get/set in class context"""
+        lines = []
+        if node.getter_body:
+            lines.append(self._indent() + f"get {node.name}() {{")
+            self.indent_level += 1
+            for stmt in node.getter_body:
+                lines.append(self._gen_statement(stmt))
+            self.indent_level -= 1
+            lines.append(self._indent() + "}")
+        if node.setter_body:
+            lines.append(self._indent() + f"set {node.name}({node.setter_param}) {{")
+            self.indent_level += 1
+            for stmt in node.setter_body:
+                lines.append(self._gen_statement(stmt))
+            self.indent_level -= 1
+            lines.append(self._indent() + "}")
+        return "\n".join(lines)
+
+    def _gen_extension_definition(self, node: ExtensionDefinition) -> str:
+        """define extension on Type -> JS prototype augmentation"""
+        lines = [self._indent() + f"// Extension methods for {node.target_type}"]
+        for stmt in node.body:
+            if isinstance(stmt, FunctionDefinition):
+                func_name = stmt.name
+                params = ", ".join(stmt.parameters)
+                lines.append(self._indent() + f"{node.target_type}.prototype.{func_name} = function({params}) {{")
+                self.indent_level += 1
+                for s in stmt.body:
+                    lines.append(self._gen_statement(s))
+                self.indent_level -= 1
+                lines.append(self._indent() + "};")
+            else:
+                lines.append(self._gen_statement(stmt))
+        return "\n".join(lines)
 
 
 def generate_javascript(ast: Program) -> str:

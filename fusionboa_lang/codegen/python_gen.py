@@ -21,6 +21,7 @@ class PythonGenerator:
         self._needs_abc_imports = False
         self._needs_re_import = False
         self._needs_functools_import = False
+        self._needs_dataclass_import = False
 
     def _indent(self) -> str:
         return "    " * self.indent_level
@@ -40,6 +41,9 @@ class PythonGenerator:
             imports.append("from typing import Generic, TypeVar")
         if self._needs_abc_imports:
             imports.append("from abc import ABC, abstractmethod")
+        if self._needs_dataclass_import:
+            imports.append("from dataclasses import dataclass, field")
+            imports.append("from typing import Optional")
         if imports:
             result = "\n".join(imports) + "\n\n" + result
         return result
@@ -749,10 +753,9 @@ class PythonGenerator:
     # ---- v0.5.0 Masterpiece Codegen ----
 
     def _gen_record_definition(self, node: RecordDefinition) -> str:
-        """define record -> Python @dataclass"""
-        lines = [self._indent() + "from dataclasses import dataclass, field",
-                 self._indent() + "from typing import Optional",
-                 self._indent() + "@dataclass"]
+        """define record -> Python @dataclass(frozen=True) for immutability"""
+        self._needs_dataclass_import = True
+        lines = [self._indent() + "@dataclass(frozen=True)"]
         lines.append(self._indent() + f"class {node.name}:")
         self.indent_level += 1
         for fname, ftype, fdefault in node.fields:

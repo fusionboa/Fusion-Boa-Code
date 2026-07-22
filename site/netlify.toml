@@ -1,0 +1,27 @@
+# FusionBoa Website — Netlify Deployment Configuration
+# Deploy: drag-and-drop the site/ folder to https://app.netlify.com
+# Or: connect your GitHub repo and Netlify auto-deploys
+
+[build]
+  publish = "site/"
+  command = "python fusionboa.py build site/fusionboa-site.fusboa --targets html,css,js"
+
+[build.environment]
+  PYTHON_VERSION = "3.12"
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "DENY"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+
+[[headers]]
+  for = "*.html"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"
+
+[[redirects]]
+  from = "/"
+  to = "/index.html"
+  status = 200

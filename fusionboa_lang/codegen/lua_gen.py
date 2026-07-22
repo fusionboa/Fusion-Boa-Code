@@ -59,6 +59,10 @@ class LuaGenerator:
             WithStatement: self._gen_with_statement,
             DecoratorStatement: lambda n: self._indent() + f"-- @{n.name}",
             StaticMethodDeclaration: self._gen_static_method,
+            # v0.5.0 Masterpiece
+            RecordDefinition: self._gen_record_definition,
+            PropertyDefinition: self._gen_property_definition,
+            ExtensionDefinition: self._gen_extension_definition,
         }
         gen_func = gen_map.get(type(node))
         if gen_func: return gen_func(node)
@@ -390,6 +394,62 @@ class LuaGenerator:
         targets = ", ".join(node.targets)
         value = self._gen_expression(node.value)
         return self._indent() + f"local {targets} = {value}"
+
+    # ---- v0.5.0 Masterpiece Codegen ----
+
+    def _gen_record_definition(self, node: RecordDefinition) -> str:
+        """define record -> Lua table with metatable for immutability"""
+        lines = [self._indent() + f"-- Record: {node.name}"]
+        lines.append(self._indent() + f"local {node.name} = {{}}")
+        lines.append(self._indent() + f"function {node.name}:new({', '.join(fname for fname, _, _ in node.fields)})")
+        self.indent_level += 1
+        lines.append(self._indent() + "local obj = {")
+        self.indent_level += 1
+        for fname, _, fdefault in node.fields:
+            default = f" = {self._gen_expression(fdefault)}" if fdefault is not None else " = nil"
+            lines.append(self._indent() + f"{fname}{default},")
+        self.indent_level -= 1
+        lines.append(self._indent() + "}")
+        lines.append(self._indent() + f"setmetatable(obj, {{ __index = {node.name} }})")
+        lines.append(self._indent() + "return obj")
+        self.indent_level -= 1
+        lines.append(self._indent() + "end")
+        return "\n".join(lines)
+
+    def _gen_property_definition(self, node: PropertyDefinition) -> str:
+        """define property -> Lua metatable-based getter/setter"""
+        lines = [self._indent() + f"-- Property: {node.name}"]
+        if node.getter_body:
+            lines.append(self._indent() + f"function __mt_{node.name}_getter(self)")
+            self.indent_level += 1
+            for stmt in node.getter_body:
+                lines.append(self._gen_statement(stmt))
+            self.indent_level -= 1
+            lines.append(self._indent() + "end")
+        if node.setter_body:
+            lines.append(self._indent() + f"function __mt_{node.name}_setter(self, {node.setter_param})")
+            self.indent_level += 1
+            for stmt in node.setter_body:
+                lines.append(self._gen_statement(stmt))
+            self.indent_level -= 1
+            lines.append(self._indent() + "end")
+        return "\n".join(lines)
+
+    def _gen_extension_definition(self, node: ExtensionDefinition) -> str:
+        """define extension on Type -> Lua table function addition"""
+        lines = [self._indent() + f"-- Extension methods for {node.target_type}"]
+        for stmt in node.body:
+            if isinstance(stmt, FunctionDefinition):
+                params = ", ".join(stmt.parameters)
+                lines.append(self._indent() + f"function {node.target_type}.{stmt.name}(self, {params})")
+                self.indent_level += 1
+                for s in stmt.body:
+                    lines.append(self._gen_statement(s))
+                self.indent_level -= 1
+                lines.append(self._indent() + "end")
+            else:
+                lines.append(self._gen_statement(stmt))
+        return "\n".join(lines)
 
 
 def generate_lua(ast: Program) -> str:

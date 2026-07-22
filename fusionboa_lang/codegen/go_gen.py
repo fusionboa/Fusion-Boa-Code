@@ -9,6 +9,7 @@ class GoGenerator:
     def __init__(self, ast: Program):
         self.ast = ast
         self.indent_level = 0
+        self._extension_methods = {}  # type_name -> set of method names
 
     def _indent(self) -> str:
         return "\t" * self.indent_level
@@ -67,6 +68,10 @@ class GoGenerator:
         if isinstance(node, DecoratorStatement): return self._indent() + f"// @{node.name}"
         if isinstance(node, StaticMethodDeclaration):
             return self._gen_statement(node.declaration) + "  // static"
+        # v0.5.0 Masterpiece
+        if isinstance(node, RecordDefinition): return self._gen_record_definition(node)
+        if isinstance(node, PropertyDefinition): return self._gen_property_definition(node)
+        if isinstance(node, ExtensionDefinition): return self._gen_extension_definition(node)
         return self._indent() + f"// {type(node).__name__}"
 
     def _gen_expression(self, node: ASTNode) -> str:
@@ -102,6 +107,18 @@ class GoGenerator:
             return f"{callee}({args})"
         if isinstance(node, Attribute): return f"{self._gen_expression(node.object)}.{node.attribute}"
         if isinstance(node, Index): return f"{self._gen_expression(node.object)}[{self._gen_expression(node.index)}]"
+        if isinstance(node, Call):
+            # Rewrite extension method calls for Go: obj.method(args) -> _Extension_Type_method(obj, args)
+            if isinstance(node.callee, Attribute):
+                obj_name = self._gen_expression(node.callee.object)
+                method_name = node.callee.attribute
+                # Check if this method is a registered extension method
+                for type_name, methods in self._extension_methods.items():
+                    if method_name in methods:
+                        args = ", ".join([obj_name] + [self._gen_expression(a) for a in node.arguments])
+                        return f"__{type_name}_{method_name}({args})"
+                return self._gen_call(node)
+            return self._gen_call(node)
         if isinstance(node, ListLiteral):
             el = ", ".join(self._gen_expression(e) for e in node.elements)
             return f"[]interface{{}}{{{el}}}"
@@ -220,6 +237,65 @@ class GoGenerator:
         if node.operator == "??":
             return self._indent() + f"if {target} == nil {{ {target} = {val} }}"
         return self._indent() + f"{target} {node.operator}= {val}"
+
+    # ---- v0.5.0 Masterpiece Codegen ----
+
+    def _gen_record_definition(self, node: RecordDefinition) -> str:
+        """define record -> Go struct"""
+        lines = [self._indent() + f"type {node.name} struct {{"]
+        self.indent_level += 1
+        for fname, ftype, fdefault in node.fields:
+            go_type = {"int": "int", "integer": "int", "float": "float64",
+                       "string": "string", "bool": "bool", "boolean": "bool",
+                       "list": "[]interface{}", "dict": "map[string]interface{}",
+                       "any": "interface{}"}.get(ftype, "interface{}")
+            lines.append(self._indent() + f"{fname.title()} {go_type}")
+        self.indent_level -= 1
+        lines.append(self._indent() + "}")
+        return "\n".join(lines)
+
+    def _gen_property_definition(self, node: PropertyDefinition) -> str:
+        """define property -> Go getter/setter methods (Go has no native properties)"""
+        lines = []
+        cap_name = node.name.title()
+        if node.getter_body:
+            lines.append(self._indent() + f"func Get{cap_name}() interface{{}} {{")
+            self.indent_level += 1
+            for stmt in node.getter_body:
+                lines.append(self._gen_statement(stmt))
+            self.indent_level -= 1
+            lines.append(self._indent() + "}")
+        if node.setter_body:
+            lines.append(self._indent() + f"func Set{cap_name}({node.setter_param} interface{{}}) {{")
+            self.indent_level += 1
+            for stmt in node.setter_body:
+                lines.append(self._gen_statement(stmt))
+            self.indent_level -= 1
+            lines.append(self._indent() + "}")
+        return "\n".join(lines)
+
+    def _gen_extension_definition(self, node: ExtensionDefinition) -> str:
+        """define extension on Type -> Go functions on types, with call-site rewriting"""
+        # Register extension methods for call-site rewriting
+        if node.target_type not in self._extension_methods:
+            self._extension_methods[node.target_type] = set()
+        for stmt in node.body:
+            if isinstance(stmt, FunctionDefinition):
+                self._extension_methods[node.target_type].add(stmt.name)
+        
+        lines = [self._indent() + f"// Extension methods for {node.target_type}"]
+        for stmt in node.body:
+            if isinstance(stmt, FunctionDefinition):
+                params = ", ".join(f"{p} interface{{}}" for p in stmt.parameters)
+                lines.append(self._indent() + f"func __{node.target_type}_{stmt.name}(self {node.target_type}, {params}) {{" if params else self._indent() + f"func __{node.target_type}_{stmt.name}(self {node.target_type}) {{")
+                self.indent_level += 1
+                for s in stmt.body:
+                    lines.append(self._gen_statement(s))
+                self.indent_level -= 1
+                lines.append(self._indent() + "}")
+            else:
+                lines.append(self._gen_statement(stmt))
+        return "\n".join(lines)
 
 
 def generate_go(ast: Program) -> str:

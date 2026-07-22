@@ -1,0 +1,614 @@
+#
+# FusionBoa Landing Page — Built with FusionBoa itself!
+# One .fusboa file generates index.html, style.css, app.js
+#
+# Build: python fusionboa.py build site/fusionboa-site.fusboa --targets html,css,js
+#
+
+# ==========================================
+# HTML — Landing Page
+# ==========================================
+// @target html
+
+doctype html
+html lang "en":
+    head:
+        meta charset "UTF-8"
+        meta name "viewport" content "width=device-width, initial-scale=1.0"
+        meta name "description" content "FusionBoa — Write in English, compile to 23 languages."
+        meta name "theme-color" content "#0a0a1a"
+        title "FusionBoa — Write in English, Compile to Everything"
+        link rel "stylesheet" href "style.css"/
+        link rel "preconnect" href "https://fonts.googleapis.com"/
+        link rel "preconnect" href "https://fonts.gstatic.com" crossorigin/
+        link href "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Fira+Code:wght@400;500;600&display=swap" rel "stylesheet"/
+    body:
+        nav id "navbar":
+            div class "nav-inner":
+                div class "logo":
+                    span class "logo-icon" "⚡"
+                    span class "logo-text" "FusionBoa"
+                div class "nav-links":
+                    a href "#features" "Features"
+                    a href "#targets" "Targets"
+                    a href "#demo" "Demo"
+                    a href "https://github.com/fusionboa/Fusion-Boa-Code" class "nav-cta" target "_blank" "GitHub"
+        header id "hero":
+            div class "hero-content":
+                div class "hero-badge":
+                    span "v1.0.0-alpha"
+                    span "23 targets"
+                    span "207 tests"
+                h1 class "hero-title" "Write in English."
+                p class "hero-subtitle" "Compile to 23 languages."
+                p class "hero-desc" "One syntax. 500+ aliases. 23 outputs. Write code the way you naturally think."
+                div class "hero-actions":
+                    a href "https://github.com/fusionboa/Fusion-Boa-Code" class "btn btn-primary" "Try It Now"
+                    a href "#demo" class "btn btn-secondary" "See It in Action"
+                div class "hero-stats":
+                    div class "stat":
+                        span class "stat-number" "23"
+                        span class "stat-label" "Targets"
+                    div class "stat":
+                        span class "stat-number" "708"
+                        span class "stat-label" "Keywords"
+                    div class "stat":
+                        span class "stat-number" "500+"
+                        span class "stat-label" "Aliases"
+                    div class "stat":
+                        span class "stat-number" "207"
+                        span class "stat-label" "Tests"
+        section id "features" class "section":
+            div class "section-inner":
+                h2 class "section-title" "Why FusionBoa?"
+                div class "features-grid":
+                    div class "feature-card":
+                        div class "feature-icon" "23"
+                        h3 "23 Targets, One Syntax"
+                        p "Write once. Compile to Python, JavaScript, Go, Rust, HTML, and 18 more."
+                    div class "feature-card":
+                        div class "feature-icon" "500+"
+                        h3 "Natural English Syntax"
+                        p "Over 500 aliases. Write code the way you speak. There is no right way to write it."
+                    div class "feature-card":
+                        div class "feature-icon" "0"
+                        h3 "Zero Dependencies"
+                        p "FusionBoa itself needs only Python 3.8+. No npm, no pip install hell, no bloat."
+                    div class "feature-card":
+                        div class "feature-icon" "23"
+                        h3 "One File to Rule Them All"
+                        p "Use @target annotations in one .fusboa file. Each section compiles to a different language."
+                    div class "feature-card":
+                        div class "feature-icon" "R"
+                        h3 "Native Passthrough"
+                        p "Need full control? Use @native to inject raw Python, Rust, or any target code directly."
+                    div class "feature-card":
+                        div class "feature-icon" "D"
+                        h3 "Desktop Builds"
+                        p "Run fusionboa build and get all 23 output files on your Desktop. Timestamped and organized."
+        section id "targets" class "section section-dark":
+            div class "section-inner":
+                h2 class "section-title" "All 23 Targets"
+                p class "section-desc" "From systems programming to web markup. One language covers it all."
+                div class "targets-grid":
+                    div class "target-card lang" "Python 🐍"
+                    div class "target-card lang" "JavaScript 🟨"
+                    div class "target-card lang" "TypeScript 🔷"
+                    div class "target-card lang" "Go 🔵"
+                    div class "target-card lang" "Rust 🦀"
+                    div class "target-card lang" "C++ ⚙️"
+                    div class "target-card lang" "Java ☕"
+                    div class "target-card lang" "C# 🟪"
+                    div class "target-card lang" "Ruby 💎"
+                    div class "target-card lang" "Kotlin 🟣"
+                    div class "target-card lang" "Swift 🕊️"
+                    div class "target-card lang" "Lua 🌙"
+                    div class "target-card lang" "Julia 🟢"
+                    div class "target-card lang" "R 📊"
+                    div class "target-card lang" "React ⚛️"
+                    div class "target-card markup" "HTML 🌐"
+                    div class "target-card markup" "CSS 🎨"
+                    div class "target-card markup" "JSON 📋"
+                    div class "target-card markup" "YAML 📄"
+                    div class "target-card markup" "TOML ⚙️"
+                    div class "target-card markup" "XML 📦"
+                    div class "target-card markup" "Markdown 📝"
+                    div class "target-card markup" "INI 🔧"
+        section id "demo" class "section":
+            div class "section-inner":
+                h2 class "section-title" "One File to 23 Outputs"
+                p class "section-desc" "Write once. Watch it compile to everything."
+                div class "demo-container":
+                    div class "editor-header":
+                        span class "editor-dot"/
+                        span class "editor-dot"/
+                        span class "editor-dot"/
+                        span class "editor-filename" "hello.fusboa"
+                    pre class "editor-content" id "code-display":
+                        code "# FusionBoa   Hello World"
+        section id "about" class "section section-dark":
+            div class "section-inner":
+                div class "about-content":
+                    h2 "Ready to Try FusionBoa?"
+                    p "One command. Zero dependencies. 23 languages."
+                    div class "install-cmds":
+                        div class "cmd-block":
+                            span class "cmd-label" "Docker (instant)"
+                            code "docker build -t fusionboa . && docker run --rm fusionboa fusionboa build complete_test.fusboa"
+                        div class "cmd-block":
+                            span class "cmd-label" "Clone and Run"
+                            code "git clone https://github.com/fusionboa/Fusion-Boa-Code.git && cd Fusion-Boa-Code && python fusionboa.py run complete_test.fusboa"
+                        div class "cmd-block":
+                            span class "cmd-label" "One-Click Windows"
+                            code "git clone https://github.com/fusionboa/Fusion-Boa-Code.git && cd Fusion-Boa-Code && install.bat"
+                    a href "https://github.com/fusionboa/Fusion-Boa-Code" class "btn btn-primary btn-large" target "_blank" "Star on GitHub"
+        footer id "footer":
+            div class "footer-inner":
+                div class "footer-brand" "FusionBoa"
+                div class "footer-links":
+                    a href "https://github.com/fusionboa/Fusion-Boa-Code" target "_blank" "GitHub"
+                    a href "https://github.com/fusionboa/Fusion-Boa-Code/blob/main/docs/COMPLETE_SYNTAX.md" target "_blank" "Docs"
+                    a href "https://github.com/fusionboa/Fusion-Boa-Code/blob/main/CHANGELOG.md" target "_blank" "Changelog"
+                p class "footer-copy" "Copyright 2026 FusionBoa Team"
+
+# ==========================================
+# CSS — Full Styling
+# ==========================================
+// @target css
+
+*:
+    margin "0"
+    padding "0"
+    box-sizing "border-box"
+
+html:
+    scroll-behavior "smooth"
+
+style body:
+    font-family "'Inter', sans-serif"
+    background-color "#0a0a1a"
+    color "#e0e0e0"
+    line-height "1.6"
+    overflow-x "hidden"
+
+style ::-webkit-scrollbar:
+    width "6px"
+
+style ::-webkit-scrollbar-track:
+    background "#0a0a1a"
+
+style ::-webkit-scrollbar-thumb:
+    background "#2d2d5e"
+    border-radius "3px"
+
+style #navbar:
+    position "fixed"
+    top "0"
+    left "0"
+    right "0"
+    z-index "1000"
+    background "rgba(10,10,26,0.85)"
+    backdrop-filter "blur(20px)"
+    border-bottom "1px solid rgba(255,255,255,0.06)"
+
+style .nav-inner:
+    max-width "1100px"
+    margin "0 auto"
+    padding "16px 24px"
+    display "flex"
+    justify-content "space-between"
+    align-items "center"
+
+style .logo:
+    display "flex"
+    align-items "center"
+    gap "8px"
+    font-size "1.3em"
+    font-weight "800"
+
+style .logo-icon:
+    font-size "1.3em"
+
+style .logo-text:
+    background "linear-gradient(135deg, #a855f7, #6366f1)"
+    -webkit-background-clip "text"
+    -webkit-text-fill-color "transparent"
+    background-clip "text"
+
+style .nav-links:
+    display "flex"
+    align-items "center"
+    gap "24px"
+
+style .nav-links a:
+    color "#a0a0b8"
+    text-decoration "none"
+    font-size "0.9em"
+    font-weight "500"
+    transition "color 0.3s"
+
+style .nav-links a:hover:
+    color "#fff"
+
+style .nav-cta:
+    padding "8px 20px"
+    background "linear-gradient(135deg, #7c3aed, #6366f1)"
+    color "#fff"
+    border-radius "8px"
+    font-weight "600"
+    transition "all 0.3s"
+
+style .nav-cta:hover:
+    transform "translateY(-2px)"
+    box-shadow "0 4px 20px rgba(124,58,237,0.4)"
+
+style #hero:
+    min-height "100vh"
+    display "flex"
+    align-items "center"
+    justify-content "center"
+    text-align "center"
+    padding "120px 24px 80px"
+    background "radial-gradient(ellipse at 50% 0%, rgba(124,58,237,0.12) 0%, transparent 60%)"
+
+style .hero-content:
+    max-width "800px"
+
+style .hero-badge:
+    display "flex"
+    gap "8px"
+    justify-content "center"
+    margin-bottom "32px"
+    flex-wrap "wrap"
+
+style .hero-badge span:
+    padding "6px 14px"
+    background "rgba(255,255,255,0.06)"
+    border "1px solid rgba(255,255,255,0.1)"
+    border-radius "20px"
+    font-size "0.8em"
+    color "#a0a0b8"
+
+style .hero-title:
+    font-size "4em"
+    font-weight "900"
+    color "#fff"
+    margin-bottom "8px"
+    letter-spacing "-1px"
+
+style .hero-subtitle:
+    font-size "2.5em"
+    font-weight "800"
+    background "linear-gradient(135deg, #a855f7, #6366f1)"
+    -webkit-background-clip "text"
+    -webkit-text-fill-color "transparent"
+    background-clip "text"
+    margin-bottom "20px"
+
+style .hero-desc:
+    font-size "1.2em"
+    color "#8888aa"
+    margin-bottom "40px"
+    max-width "500px"
+    margin-left "auto"
+    margin-right "auto"
+
+style .hero-actions:
+    display "flex"
+    gap "16px"
+    justify-content "center"
+    margin-bottom "60px"
+
+style .btn:
+    padding "14px 32px"
+    border-radius "12px"
+    font-size "1em"
+    font-weight "600"
+    text-decoration "none"
+    transition "all 0.3s"
+    display "inline-block"
+
+style .btn-primary:
+    background "linear-gradient(135deg, #7c3aed, #6366f1)"
+    color "#fff"
+    box-shadow "0 4px 20px rgba(124,58,237,0.3)"
+
+style .btn-primary:hover:
+    transform "translateY(-2px)"
+    box-shadow "0 8px 30px rgba(124,58,237,0.5)"
+
+style .btn-secondary:
+    background "rgba(255,255,255,0.06)"
+    color "#e0e0e0"
+    border "1px solid rgba(255,255,255,0.15)"
+
+style .btn-secondary:hover:
+    background "rgba(255,255,255,0.1)"
+    transform "translateY(-2px)"
+
+style .hero-stats:
+    display "flex"
+    gap "40px"
+    justify-content "center"
+    flex-wrap "wrap"
+
+style .stat:
+    display "flex"
+    flex-direction "column"
+    align-items "center"
+
+style .stat-number:
+    font-size "2.5em"
+    font-weight "800"
+    background "linear-gradient(135deg, #a855f7, #6366f1)"
+    -webkit-background-clip "text"
+    -webkit-text-fill-color "transparent"
+    background-clip "text"
+
+style .stat-label:
+    font-size "0.85em"
+    color "#666688"
+    margin-top "4px"
+
+style .section:
+    padding "100px 24px"
+
+style .section-dark:
+    background "rgba(255,255,255,0.02)"
+
+style .section-inner:
+    max-width "1100px"
+    margin "0 auto"
+
+style .section-title:
+    font-size "2.5em"
+    font-weight "800"
+    text-align "center"
+    margin-bottom "16px"
+    color "#fff"
+
+style .section-desc:
+    text-align "center"
+    color "#8888aa"
+    font-size "1.1em"
+    margin-bottom "60px"
+
+style .features-grid:
+    display "grid"
+    grid-template-columns "repeat(auto-fit, minmax(300px, 1fr))"
+    gap "24px"
+
+style .feature-card:
+    padding "36px"
+    background "rgba(255,255,255,0.03)"
+    border "1px solid rgba(255,255,255,0.06)"
+    border-radius "16px"
+    transition "all 0.3s"
+
+style .feature-card:hover:
+    transform "translateY(-4px)"
+    border-color "rgba(124,58,237,0.3)"
+    box-shadow "0 8px 30px rgba(124,58,237,0.1)"
+
+style .feature-icon:
+    font-size "2.5em"
+    font-weight "800"
+    margin-bottom "12px"
+    background "linear-gradient(135deg, #a855f7, #6366f1)"
+    -webkit-background-clip "text"
+    -webkit-text-fill-color "transparent"
+    background-clip "text"
+
+style .feature-card h3:
+    font-size "1.2em"
+    font-weight "700"
+    margin-bottom "12px"
+    color "#fff"
+
+style .feature-card p:
+    font-size "0.95em"
+    color "#8888aa"
+    line-height "1.7"
+
+style .targets-grid:
+    display "grid"
+    grid-template-columns "repeat(auto-fill, minmax(130px, 1fr))"
+    gap "12px"
+
+style .target-card:
+    padding "20px 16px"
+    border-radius "12px"
+    text-align "center"
+    font-weight "600"
+    font-size "0.9em"
+    cursor "default"
+    transition "all 0.3s"
+    border "1px solid rgba(255,255,255,0.06)"
+
+style .target-card.lang:
+    background "rgba(124,58,237,0.08)"
+    border-color "rgba(124,58,237,0.15)"
+
+style .target-card.markup:
+    background "rgba(59,130,246,0.08)"
+    border-color "rgba(59,130,246,0.15)"
+
+style .target-card:hover:
+    transform "translateY(-3px)"
+
+style .target-card.lang:hover:
+    border-color "rgba(124,58,237,0.4)"
+    box-shadow "0 8px 20px rgba(124,58,237,0.15)"
+
+style .target-card.markup:hover:
+    border-color "rgba(59,130,246,0.4)"
+    box-shadow "0 8px 20px rgba(59,130,246,0.15)"
+
+style .demo-container:
+    max-width "700px"
+    margin "0 auto"
+    background "#000"
+    border "1px solid rgba(255,255,255,0.1)"
+    border-radius "12px"
+    overflow "hidden"
+
+style .editor-header:
+    display "flex"
+    align-items "center"
+    gap "8px"
+    padding "12px 16px"
+    background "rgba(255,255,255,0.03)"
+    border-bottom "1px solid rgba(255,255,255,0.06)"
+
+style .editor-dot:
+    width "12px"
+    height "12px"
+    border-radius "50%"
+    display "inline-block"
+
+style .editor-dot:nth-child(1):
+    background "#ff5f56"
+
+style .editor-dot:nth-child(2):
+    background "#ffbd2e"
+
+style .editor-dot:nth-child(3):
+    background "#27c93f"
+
+style .editor-filename:
+    margin-left "12px"
+    font-size "0.8em"
+    color "#666"
+
+style .editor-content:
+    padding "20px 24px"
+    font-family "'Fira Code', monospace"
+    font-size "0.85em"
+    line-height "1.7"
+    color "#a0a0b8"
+    overflow-x "auto"
+    min-height "200px"
+
+style .about-content:
+    text-align "center"
+    max-width "700px"
+    margin "0 auto"
+
+style .about-content h2:
+    font-size "2.5em"
+    font-weight "800"
+    color "#fff"
+    margin-bottom "12px"
+
+style .about-content p:
+    color "#8888aa"
+    font-size "1.1em"
+    margin-bottom "40px"
+
+style .install-cmds:
+    display "flex"
+    flex-direction "column"
+    gap "16px"
+    text-align "left"
+    margin-bottom "40px"
+
+style .cmd-block:
+    background "rgba(0,0,0,0.4)"
+    border "1px solid rgba(255,255,255,0.06)"
+    border-radius "12px"
+    padding "16px 20px"
+
+style .cmd-label:
+    display "block"
+    font-size "0.8em"
+    color "#666688"
+    margin-bottom "8px"
+    font-weight "500"
+
+style .cmd-block code:
+    display "block"
+    font-family "'Fira Code', monospace"
+    font-size "0.85em"
+    color "#a0a0b8"
+    line-height "1.6"
+    overflow-x "auto"
+
+style .btn-large:
+    padding "18px 48px"
+    font-size "1.1em"
+
+style #footer:
+    border-top "1px solid rgba(255,255,255,0.06)"
+    padding "60px 24px 40px"
+    text-align "center"
+
+style .footer-inner:
+    max-width "1100px"
+    margin "0 auto"
+
+style .footer-brand:
+    font-size "1.1em"
+    font-weight "700"
+    color "#fff"
+    margin-bottom "16px"
+
+style .footer-links:
+    display "flex"
+    gap "24px"
+    justify-content "center"
+    margin-bottom "24px"
+
+style .footer-links a:
+    color "#8888aa"
+    text-decoration "none"
+    font-size "0.9em"
+    transition "color 0.3s"
+
+style .footer-links a:hover:
+    color "#a855f7"
+
+style .footer-copy:
+    color "#555577"
+    font-size "0.8em"
+
+style @media (max-width: 768px):
+    .hero-title:
+        font-size "2.5em"
+    .hero-subtitle:
+        font-size "1.8em"
+    .hero-stats:
+        gap "20px"
+    .hero-actions:
+        flex-direction "column"
+        align-items "center"
+    .nav-links a:not(.nav-cta):
+        display "none"
+    .features-grid:
+        grid-template-columns "1fr"
+    .section-title:
+        font-size "1.8em"
+
+style @media (max-width: 480px):
+    #hero:
+        padding "100px 16px 60px"
+    .hero-title:
+        font-size "1.8em"
+    .hero-subtitle:
+        font-size "1.5em"
+    .stat-number:
+        font-size "1.8em"
+
+# ==========================================
+# JavaScript — Interactive Features
+# (Standalone — site-deploy/app.js handles all JS)
+# ==========================================
+// @target javascript
+
+# Interactive JS is provided separately via site-deploy/app.js
+# for a richer experience: 7 code samples, labels, smooth scroll,
+# scroll animations, and more.
+#
+# To rebuild app.js from .fusboa:
+#    fusionboa build site/fusionboa-site.fusboa -t js -o site-deploy/app.js
+print("FusionBoa site loaded!")
+print("See site-deploy/app.js for full interactivity.")

@@ -60,6 +60,10 @@ class SwiftGenerator:
             WithStatement: self._gen_with_statement,
             DecoratorStatement: lambda n: self._indent() + f"// @{n.name}",
             StaticMethodDeclaration: self._gen_static_method,
+            # v0.5.0 Masterpiece
+            RecordDefinition: self._gen_record_definition,
+            PropertyDefinition: self._gen_property_definition,
+            ExtensionDefinition: self._gen_extension_definition,
         }
         gen_func = gen_map.get(type(node))
         if gen_func: return gen_func(node)
@@ -376,6 +380,68 @@ class SwiftGenerator:
         for i, member in enumerate(node.members):
             sep = "," if i < len(node.members) - 1 else ""
             lines.append(self._indent() + f"    case {member} = {i}{sep}")
+        lines.append(self._indent() + "}")
+        return "\n".join(lines)
+
+    # ---- v0.5.0 Masterpiece Codegen ----
+
+    def _gen_record_definition(self, node: RecordDefinition) -> str:
+        """define record -> Swift struct"""
+        lines = [self._indent() + f"struct {node.name} {{"]
+        self.indent_level += 1
+        for fname, ftype, fdefault in node.fields:
+            sw_type = {"int": "Int", "integer": "Int", "float": "Double",
+                       "string": "String", "bool": "Bool", "boolean": "Bool",
+                       "any": "Any"}.get(ftype, "Any")
+            default = f" = {self._gen_expression(fdefault)}" if fdefault is not None else ""
+            lines.append(self._indent() + f"let {fname}: {sw_type}{default}")
+        self.indent_level -= 1
+        lines.append(self._indent() + "}")
+        return "\n".join(lines)
+
+    def _gen_property_definition(self, node: PropertyDefinition) -> str:
+        """define property -> Swift computed property"""
+        lines = []
+        sw_type = "Any"
+        if node.type_annotation:
+            sw_type = {"int": "Int", "integer": "Int", "float": "Double",
+                       "string": "String", "bool": "Bool", "any": "Any"}.get(node.type_annotation.type_name, "Any")
+        if node.getter_body:
+            lines.append(self._indent() + f"var {node.name}: {sw_type} {{")
+            self.indent_level += 1
+            for stmt in node.getter_body:
+                lines.append(self._gen_statement(stmt))
+            self.indent_level -= 1
+            lines.append(self._indent() + "}")
+        if node.setter_body:
+            lines.append(self._indent() + f"var {node.name}: {sw_type} {{")
+            self.indent_level += 1
+            lines.append(self._indent() + f"set({node.setter_param}) {{")
+            self.indent_level += 1
+            for stmt in node.setter_body:
+                lines.append(self._gen_statement(stmt))
+            self.indent_level -= 1
+            lines.append(self._indent() + "}")
+            self.indent_level -= 1
+            lines.append(self._indent() + "}")
+        return "\n".join(lines)
+
+    def _gen_extension_definition(self, node: ExtensionDefinition) -> str:
+        """define extension on Type -> Swift extension"""
+        lines = [self._indent() + f"extension {node.target_type} {{"]
+        self.indent_level += 1
+        for stmt in node.body:
+            if isinstance(stmt, FunctionDefinition):
+                params = ", ".join(f"{p}: Any" for p in stmt.parameters)
+                lines.append(self._indent() + f"func {stmt.name}({params}) {{" if params else self._indent() + f"func {stmt.name}() {{")
+                self.indent_level += 1
+                for s in stmt.body:
+                    lines.append(self._gen_statement(s))
+                self.indent_level -= 1
+                lines.append(self._indent() + "}")
+            else:
+                lines.append(self._gen_statement(stmt))
+        self.indent_level -= 1
         lines.append(self._indent() + "}")
         return "\n".join(lines)
 

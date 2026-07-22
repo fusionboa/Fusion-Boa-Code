@@ -75,6 +75,10 @@ class CppGenerator:
             WithStatement: self._gen_with_statement,
             DecoratorStatement: lambda n: self._indent() + f"// @{n.name}",
             StaticMethodDeclaration: self._gen_static_method_declaration,
+            # v0.5.0 Masterpiece
+            RecordDefinition: self._gen_record_definition,
+            PropertyDefinition: self._gen_property_definition,
+            ExtensionDefinition: self._gen_extension_definition,
         }
         gen_func = gen_map.get(type(node))
         if gen_func: return gen_func(node)
@@ -426,6 +430,67 @@ class CppGenerator:
                 return self._indent() + f'cout << {self._gen_literal(Literal(value=node.prompt))}; string {node.target}; getline(cin, {node.target});'
             return self._indent() + f"string {node.target}; getline(cin, {node.target});"
         return self._indent() + "string __tmp; getline(cin, __tmp);"
+
+    # ---- v0.5.0 Masterpiece Codegen ----
+
+    def _gen_record_definition(self, node: RecordDefinition) -> str:
+        """define record -> C++ struct with operator=="""
+        self._needs_string = True
+        lines = [self._indent() + f"struct {node.name} {{"]
+        self.indent_level += 1
+        for fname, ftype, fdefault in node.fields:
+            cpp_type = {"int": "int", "integer": "int", "float": "double",
+                        "string": "string", "bool": "bool", "boolean": "bool",
+                        "list": "vector<any>", "dict": "map<any,any>"}.get(ftype, "int")
+            default_val = f" = {self._gen_expression(fdefault)}" if fdefault is not None else ""
+            lines.append(self._indent() + f"{cpp_type} {fname}{default_val};")
+        # Add operator== for value-based equality
+        if node.fields:
+            lines.append(self._indent() + f"bool operator==(const {node.name}& other) const {{")
+            self.indent_level += 1
+            eq_checks = " && ".join(f"{fname} == other.{fname}" for fname, _, _ in node.fields)
+            lines.append(self._indent() + f"return {eq_checks};")
+            self.indent_level -= 1
+            lines.append(self._indent() + "}")
+        self.indent_level -= 1
+        lines.append(self._indent() + "};")
+        return "\n".join(lines)
+
+    def _gen_property_definition(self, node: PropertyDefinition) -> str:
+        """define property -> C++ getter/setter methods"""
+        lines = []
+        if node.getter_body:
+            lines.append(self._indent() + f"auto {node.name}() const {{")
+            self.indent_level += 1
+            for stmt in node.getter_body:
+                lines.append(self._gen_statement(stmt))
+            self.indent_level -= 1
+            lines.append(self._indent() + "}")
+        if node.setter_body:
+            lines.append(self._indent() + f"void set_{node.name}(auto {node.setter_param}) {{")
+            self.indent_level += 1
+            for stmt in node.setter_body:
+                lines.append(self._gen_statement(stmt))
+            self.indent_level -= 1
+            lines.append(self._indent() + "}")
+        return "\n".join(lines)
+
+    def _gen_extension_definition(self, node: ExtensionDefinition) -> str:
+        """define extension on Type -> C++ free functions"""
+        lines = [self._indent() + f"// Extension methods for {node.target_type}"]
+        for stmt in node.body:
+            if isinstance(stmt, FunctionDefinition):
+                params_list = ["auto self"] + [f"auto {p}" for p in stmt.parameters]
+                params_str = ", ".join(params_list)
+                lines.append(self._indent() + f"auto {node.target_type}_{stmt.name}({params_str}) {{")
+                self.indent_level += 1
+                for s in stmt.body:
+                    lines.append(self._gen_statement(s))
+                self.indent_level -= 1
+                lines.append(self._indent() + "}")
+            else:
+                lines.append(self._gen_statement(stmt))
+        return "\n".join(lines)
 
 
 def generate_cpp(ast: Program) -> str:

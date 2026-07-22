@@ -709,7 +709,7 @@ KEYWORDS = {
 
     # Time and sequence words
     "after": TokenType.THEN,
-    "before": TokenType.IF,
+    # NOTE: "before" removed from IF alias - handled by parser as soft keyword
     "then after": TokenType.THEN,
     "subsequently": TokenType.THEN,
     "thereafter": TokenType.THEN,
@@ -767,17 +767,10 @@ KEYWORDS = {
     "thank you": TokenType.RETURN,
     "thanks": TokenType.RETURN,
     "cheers": TokenType.RETURN,
-    "nice": TokenType.PRINT,
-    "excellent": TokenType.PRINT,
-    "awesome": TokenType.PRINT,
-    "superb": TokenType.PRINT,
-    "cool": TokenType.PRINT,
-    "sweet": TokenType.PRINT,
-    "neat": TokenType.PRINT,
-    "brilliant": TokenType.PRINT,
-    "fantastic": TokenType.PRINT,
-    "wonderful": TokenType.PRINT,
-    "terrific": TokenType.PRINT,
+    # NOTE: Single-word print aliases (nice, excellent, etc.) removed from lexer.
+    # These are handled by the parser as "soft keywords" to avoid collisions
+    # with variable names like cool_factor or string values like "excellent".
+    # Multi-word print aliases (like "thank you") remain in the lexer.
     # Even more action verbs
     "start": TokenType.LET,
     "begin": TokenType.LET,

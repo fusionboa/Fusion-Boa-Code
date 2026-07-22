@@ -104,6 +104,10 @@ class ReactGenerator:
             return self._indent() + f"// @{node.name}"
         if isinstance(node, StaticMethodDeclaration):
             return self._gen_statement(node.declaration).replace("const ", "static ")
+        # v0.5.0 Masterpiece (Records only - Properties/Extensions not applicable in JSX)
+        if isinstance(node, RecordDefinition): return self._gen_record_definition(node)
+        if isinstance(node, PropertyDefinition): return self._indent() + f"// Property: {node.name} (not applicable in React JSX)"
+        if isinstance(node, ExtensionDefinition): return self._indent() + f"// Extension: {node.target_type} (not applicable in React JSX)"
         return self._indent() + f"// {type(node).__name__}"
 
     def _gen_expression(self, node: ASTNode) -> str:
@@ -359,6 +363,23 @@ class ReactGenerator:
     def _void_elements(self) -> set:
         return {"br", "hr", "img", "input", "link", "meta", "area", "base",
                 "col", "embed", "param", "source", "track", "wbr"}
+
+    def _gen_record_definition(self, node: RecordDefinition) -> str:
+        """define record -> JS immutable class for React components"""
+        lines = [self._indent() + f"class {node.name} {{"]
+        self.indent_level += 1
+        if node.fields:
+            fparams = ", ".join(f"{fname} = null" for fname, _, _ in node.fields)
+            lines.append(self._indent() + f"constructor({fparams}) {{")
+            self.indent_level += 1
+            for fname, _, _ in node.fields:
+                lines.append(self._indent() + f"this.{fname} = {fname};")
+            lines.append(self._indent() + "Object.freeze(this);")
+            self.indent_level -= 1
+            lines.append(self._indent() + "}")
+        self.indent_level -= 1
+        lines.append(self._indent() + "}")
+        return "\n".join(lines)
 
 
 def generate_react(ast: Program) -> str:

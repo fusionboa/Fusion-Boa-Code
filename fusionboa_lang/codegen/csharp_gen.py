@@ -67,6 +67,10 @@ class CSharpGenerator:
             WithStatement: self._gen_with_statement,
             DecoratorStatement: lambda n: f"// @{n.name}",
             StaticMethodDeclaration: self._gen_static_method,
+            # v0.5.0 Masterpiece
+            RecordDefinition: self._gen_record_definition,
+            PropertyDefinition: self._gen_property_definition,
+            ExtensionDefinition: self._gen_extension_definition,
         }
         gen_func = gen_map.get(type(node))
         if gen_func: return gen_func(node)
@@ -351,6 +355,51 @@ class CSharpGenerator:
         lines = [f"if (!({cond})) {{"]
         for stmt in node.body: lines.append(f"    {self._gen_statement(stmt)}")
         lines.append(f"    return;")
+        lines.append("}")
+        return "\n".join(lines)
+
+    # ---- v0.5.0 Masterpiece Codegen ----
+
+    def _gen_record_definition(self, node: RecordDefinition) -> str:
+        """define record -> C# record class (C# 9+)"""
+        fields_str = ", ".join(f"{fname} {self._cs_type(ftype)}" for fname, ftype, _ in node.fields)
+        return f"record {node.name}({fields_str});"
+
+    def _cs_type(self, ftype: str) -> str:
+        return {"int": "int", "integer": "int", "float": "double",
+                "string": "string", "bool": "bool", "boolean": "bool",
+                "list": "List<object>", "dict": "Dictionary<object,object>",
+                "any": "object"}.get(ftype, "object")
+
+    def _gen_property_definition(self, node: PropertyDefinition) -> str:
+        """define property -> C# property with get/set"""
+        lines = []
+        type_str = self._cs_type(node.type_annotation.type_name) if node.type_annotation else "dynamic"
+        if node.getter_body or node.setter_body:
+            lines.append(f"{type_str} {node.name} {{")
+            if node.getter_body:
+                lines.append("    get {")
+                for stmt in node.getter_body:
+                    lines.append(f"        {self._gen_statement(stmt)}")
+                lines.append("    }")
+            if node.setter_body:
+                lines.append("    set {")
+                for stmt in node.setter_body:
+                    lines.append(f"        {self._gen_statement(stmt)}")
+                lines.append("    }")
+            lines.append("}")
+        return "\n".join(lines)
+
+    def _gen_extension_definition(self, node: ExtensionDefinition) -> str:
+        """define extension on Type -> C# static class with 'this' keyword"""
+        lines = [f"static class {node.target_type}Extensions {{"]
+        for stmt in node.body:
+            if isinstance(stmt, FunctionDefinition):
+                params = ", ".join(f"this dynamic self" if i == 0 else f"dynamic {p}" for i, p in enumerate(["self"] + stmt.parameters))
+                lines.append(f"    public static dynamic {stmt.name}({params}) {{")
+                for s in stmt.body:
+                    lines.append(f"        {self._gen_statement(s)}")
+                lines.append("    }")
         lines.append("}")
         return "\n".join(lines)
 

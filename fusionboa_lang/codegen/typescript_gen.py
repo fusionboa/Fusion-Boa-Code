@@ -73,6 +73,10 @@ class TypeScriptGenerator:
         if isinstance(node, StaticMethodDeclaration):
             func = self._gen_statement(node.declaration)
             return func.replace("function ", "static function ", 1)
+        # v0.5.0 Masterpiece
+        if isinstance(node, RecordDefinition): return self._gen_record_definition(node)
+        if isinstance(node, PropertyDefinition): return self._gen_property_definition(node)
+        if isinstance(node, ExtensionDefinition): return self._gen_extension_definition(node)
         return self._indent() + f"// {type(node).__name__}"
 
     def _gen_expression(self, node: ASTNode) -> str:
@@ -296,6 +300,75 @@ class TypeScriptGenerator:
         if node.operator == "??":
             return self._indent() + f"{target} ??= {val};"
         return self._indent() + f"{target} {node.operator}= {val};"
+
+    # ---- v0.5.0 Masterpiece Codegen ----
+
+    def _gen_record_definition(self, node: RecordDefinition) -> str:
+        """define record -> TS readonly interface + factory"""
+        lines = [self._indent() + f"interface {node.name} {{"]
+        self.indent_level += 1
+        for fname, ftype, _ in node.fields:
+            ts_type = {"int": "number", "integer": "number", "float": "number",
+                       "string": "string", "bool": "boolean", "boolean": "boolean",
+                       "list": "any[]", "dict": "Record<string, any>",
+                       "any": "any"}.get(ftype, "any")
+            lines.append(self._indent() + f"readonly {fname}: {ts_type};")
+        self.indent_level -= 1
+        lines.append(self._indent() + "}")
+        lines.append(self._indent() + f"function create{node.name}({', '.join(f'{fname}: {self._ts_type(ftype)}' for fname, ftype, _ in node.fields)}): {node.name} {{")
+        self.indent_level += 1
+        fields_obj = ", ".join(f"{fname}" for fname, _, _ in node.fields)
+        lines.append(self._indent() + f"return Object.freeze({{ {fields_obj} }});")
+        self.indent_level -= 1
+        lines.append(self._indent() + "}")
+        return "\n".join(lines)
+
+    def _ts_type(self, ftype: str) -> str:
+        return {"int": "number", "integer": "number", "float": "number",
+                "string": "string", "bool": "boolean", "boolean": "boolean",
+                "any": "any"}.get(ftype, "any")
+
+    def _gen_property_definition(self, node: PropertyDefinition) -> str:
+        """define property -> TS get/set accessors"""
+        lines = []
+        ts_type = self._ts_type(node.type_annotation.type_name) if node.type_annotation else "any"
+        if node.getter_body:
+            lines.append(self._indent() + f"get {node.name}(): {ts_type} {{")
+            self.indent_level += 1
+            for stmt in node.getter_body:
+                lines.append(self._gen_statement(stmt))
+            self.indent_level -= 1
+            lines.append(self._indent() + "}")
+        if node.setter_body:
+            lines.append(self._indent() + f"set {node.name}({node.setter_param}: {ts_type}) {{")
+            self.indent_level += 1
+            for stmt in node.setter_body:
+                lines.append(self._gen_statement(stmt))
+            self.indent_level -= 1
+            lines.append(self._indent() + "}")
+        return "\n".join(lines)
+
+    def _gen_extension_definition(self, node: ExtensionDefinition) -> str:
+        """define extension on Type -> TS declaration merging + prototype"""
+        lines = [self._indent() + f"// Extension methods for {node.target_type}"]
+        lines.append(self._indent() + f"declare global {{ interface {node.target_type} {{ }}")
+        self.indent_level += 1
+        for stmt in node.body:
+            if isinstance(stmt, FunctionDefinition):
+                params = ", ".join(f"{p}: any" for p in stmt.parameters)
+                lines.append(self._indent() + f"{stmt.name}({params}): any;")
+        self.indent_level -= 1
+        lines.append(self._indent() + "}")
+        for stmt in node.body:
+            if isinstance(stmt, FunctionDefinition):
+                params = ", ".join(f"{p}: any" for p in stmt.parameters)
+                lines.append(self._indent() + f"{node.target_type}.prototype.{stmt.name} = function({params}): any {{")
+                self.indent_level += 1
+                for s in stmt.body:
+                    lines.append(self._gen_statement(s))
+                self.indent_level -= 1
+                lines.append(self._indent() + "};")
+        return "\n".join(lines)
 
 
 def generate_typescript(ast: Program) -> str:

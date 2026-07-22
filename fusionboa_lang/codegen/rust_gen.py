@@ -72,6 +72,10 @@ class RustGenerator:
         if isinstance(node, DecoratorStatement): return self._indent() + f"// @{node.name}"
         if isinstance(node, StaticMethodDeclaration):
             return self._gen_statement(node.declaration).replace("fn ", "// static\nfn ", 1)
+        # v0.5.0 Masterpiece
+        if isinstance(node, RecordDefinition): return self._gen_record_definition(node)
+        if isinstance(node, PropertyDefinition): return self._gen_property_definition(node)
+        if isinstance(node, ExtensionDefinition): return self._gen_extension_definition(node)
         return self._indent() + f"// {type(node).__name__};"
 
     def _gen_expression(self, node: ASTNode) -> str:
@@ -239,6 +243,62 @@ class RustGenerator:
         if node.operator in ("||", "&&", "??"):
             return self._indent() + f"{target} = {target} {node.operator} {val};  // logical assign"
         return self._indent() + f"{target} {node.operator}= {val};"
+
+    # ---- v0.5.0 Masterpiece Codegen ----
+
+    def _gen_record_definition(self, node: RecordDefinition) -> str:
+        """define record -> Rust struct with derive macros"""
+        lines = [self._indent() + "#[derive(Debug, Clone, PartialEq)]",
+                 self._indent() + f"struct {node.name} {{"]
+        self.indent_level += 1
+        for fname, ftype, fdefault in node.fields:
+            rust_type = {"int": "i32", "integer": "i32", "float": "f64",
+                         "string": "String", "bool": "bool", "boolean": "bool",
+                         "any": "Box<dyn std::any::Any>"}.get(ftype, "Box<dyn std::any::Any>")
+            default = f" = {self._gen_expression(fdefault)}" if fdefault is not None else ""
+            lines.append(self._indent() + f"pub {fname}: {rust_type},{default}")
+        self.indent_level -= 1
+        lines.append(self._indent() + "}")
+        return "\n".join(lines)
+
+    def _gen_property_definition(self, node: PropertyDefinition) -> str:
+        """define property -> Rust impl block with getter/setter"""
+        lines = [self._indent() + "impl struct {"]
+        self.indent_level += 1
+        cap_name = node.name[0].upper() + node.name[1:]
+        if node.getter_body:
+            lines.append(self._indent() + f"pub fn {node.name}(&self) -> &dyn std::any::Any {{")
+            self.indent_level += 1
+            for stmt in node.getter_body:
+                lines.append(self._gen_statement(stmt))
+            self.indent_level -= 1
+            lines.append(self._indent() + "}")
+        if node.setter_body:
+            lines.append(self._indent() + f"pub fn set_{node.name}(&mut self, {node.setter_param}: Box<dyn std::any::Any>) {{")
+            self.indent_level += 1
+            for stmt in node.setter_body:
+                lines.append(self._gen_statement(stmt))
+            self.indent_level -= 1
+            lines.append(self._indent() + "}")
+        self.indent_level -= 1
+        lines.append(self._indent() + "}")
+        return "\n".join(lines)
+
+    def _gen_extension_definition(self, node: ExtensionDefinition) -> str:
+        """define extension on Type -> Rust impl block"""
+        lines = [self._indent() + f"// Extension methods for {node.target_type}"]
+        for stmt in node.body:
+            if isinstance(stmt, FunctionDefinition):
+                params = ", ".join(f"{p}: i32" for p in stmt.parameters)
+                lines.append(self._indent() + f"fn {node.target_type}_{stmt.name}(self: &{node.target_type}, {params}) {{" if params else self._indent() + f"fn {node.target_type}_{stmt.name}(self: &{node.target_type}) {{")
+                self.indent_level += 1
+                for s in stmt.body:
+                    lines.append(self._gen_statement(s))
+                self.indent_level -= 1
+                lines.append(self._indent() + "}")
+            else:
+                lines.append(self._gen_statement(stmt))
+        return "\n".join(lines)
 
 
 def generate_rust(ast: Program) -> str:

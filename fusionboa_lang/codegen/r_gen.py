@@ -59,6 +59,10 @@ class RGenerator:
             WithStatement: self._gen_with_statement,
             DecoratorStatement: lambda n: self._indent() + f"# @{n.name}",
             StaticMethodDeclaration: lambda n: self._gen_statement(n.declaration).replace(" <- function", " <- function  # static", 1),
+            # v0.5.0 Masterpiece
+            RecordDefinition: self._gen_record_definition,
+            PropertyDefinition: self._gen_property_definition,
+            ExtensionDefinition: self._gen_extension_definition,
         }
         gen_func = gen_map.get(type(node))
         if gen_func: return gen_func(node)
@@ -379,6 +383,56 @@ class RGenerator:
         targets = ", ".join(node.targets)
         value = self._gen_expression(node.value)
         return self._indent() + f"{targets} <- {value}"
+
+    # ---- v0.5.0 Masterpiece Codegen ----
+
+    def _gen_record_definition(self, node: RecordDefinition) -> str:
+        """define record -> R list with class attribute"""
+        lines = [self._indent() + f"# Record: {node.name}"]
+        lines.append(self._indent() + f"{node.name} <- function({', '.join(fname + ' = NULL' for fname, _, _ in node.fields)}) {{")
+        self.indent_level += 1
+        for fname, _, fdefault in node.fields:
+            if fdefault is not None:
+                lines.append(self._indent() + f"if (missing({fname})) {fname} <- {self._gen_expression(fdefault)}")
+        lines.append(self._indent() + f"obj <- list({', '.join(fname + ' = ' + fname for fname, _, _ in node.fields)})")
+        lines.append(self._indent() + f"class(obj) <- '{node.name}'")
+        lines.append(self._indent() + "return(obj)")
+        self.indent_level -= 1
+        lines.append(self._indent() + "}")
+        return "\n".join(lines)
+
+    def _gen_property_definition(self, node: PropertyDefinition) -> str:
+        """define property -> R active binding (makeActiveBinding)"""
+        lines = [self._indent() + f"# Property: {node.name}"]
+        if node.getter_body:
+            lines.append(self._indent() + f"get_{node.name} <- function(self) {{")
+            self.indent_level += 1
+            for stmt in node.getter_body:
+                lines.append(self._gen_statement(stmt))
+            self.indent_level -= 1
+            lines.append(self._indent() + "}")
+        if node.setter_body:
+            lines.append(self._indent() + f"set_{node.name} <- function(self, {node.setter_param}) {{")
+            self.indent_level += 1
+            for stmt in node.setter_body:
+                lines.append(self._gen_statement(stmt))
+            self.indent_level -= 1
+            lines.append(self._indent() + "}")
+        return "\n".join(lines)
+
+    def _gen_extension_definition(self, node: ExtensionDefinition) -> str:
+        """define extension on Type -> R S3 generic method"""
+        lines = [self._indent() + f"# Extension methods for {node.target_type}"]
+        for stmt in node.body:
+            if isinstance(stmt, FunctionDefinition):
+                params = ", ".join(stmt.parameters) if stmt.parameters else ""
+                lines.append(self._indent() + f"{stmt.name}.{node.target_type} <- function({params})" if params else self._indent() + f"{stmt.name}.{node.target_type} <- function()")
+                self.indent_level += 1
+                for s in stmt.body:
+                    lines.append(self._gen_statement(s))
+                self.indent_level -= 1
+                lines.append(self._indent() + "}")
+        return "\n".join(lines)
 
 
 def generate_r(ast: Program) -> str:

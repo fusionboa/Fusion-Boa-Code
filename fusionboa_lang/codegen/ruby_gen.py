@@ -67,6 +67,10 @@ class RubyGenerator:
         if isinstance(node, StaticMethodDeclaration):
             func = self._gen_statement(node.declaration)
             return func.replace("def ", "def self.", 1)
+        # v0.5.0 Masterpiece
+        if isinstance(node, RecordDefinition): return self._gen_record_definition(node)
+        if isinstance(node, PropertyDefinition): return self._gen_property_definition(node)
+        if isinstance(node, ExtensionDefinition): return self._gen_extension_definition(node)
         raise NotImplementedError(f"Ruby codegen does not support AST node: {type(node).__name__}")
 
     def _gen_expression(self, node: ASTNode) -> str:
@@ -283,6 +287,58 @@ class RubyGenerator:
         if node.operator == "??":
             return self._indent() + f"{target} = {target}.nil? ? {val} : {target}"
         return self._indent() + f"{target} = {target} {node.operator} {val}"
+
+    # ---- v0.5.0 Masterpiece Codegen ----
+
+    def _gen_record_definition(self, node: RecordDefinition) -> str:
+        """define record -> Ruby Struct (immutable with freeze)"""
+        field_names = ", ".join(f"'{fname}'" for fname, _, _ in node.fields) if node.fields else ""
+        lines = [self._indent() + f"{node.name} = Struct.new({field_names}) do"]
+        self.indent_level += 1
+        lines.append(self._indent() + "def initialize(*args)")
+        self.indent_level += 1
+        lines.append(self._indent() + "super")
+        lines.append(self._indent() + "freeze")
+        self.indent_level -= 1
+        lines.append(self._indent() + "end")
+        self.indent_level -= 1
+        lines.append(self._indent() + "end")
+        return "\n".join(lines)
+
+    def _gen_property_definition(self, node: PropertyDefinition) -> str:
+        """define property -> Ruby attr_reader/attr_writer with custom logic"""
+        lines = []
+        if node.getter_body:
+            lines.append(self._indent() + f"def {node.name}")
+            self.indent_level += 1
+            for stmt in node.getter_body:
+                lines.append(self._gen_statement(stmt))
+            self.indent_level -= 1
+            lines.append(self._indent() + "end")
+        if node.setter_body:
+            lines.append(self._indent() + f"def {node.name}=(value)")
+            self.indent_level += 1
+            for stmt in node.setter_body:
+                lines.append(self._gen_statement(stmt))
+            self.indent_level -= 1
+            lines.append(self._indent() + "end")
+        return "\n".join(lines)
+
+    def _gen_extension_definition(self, node: ExtensionDefinition) -> str:
+        """define extension on Type -> Ruby open class/monkey-patching"""
+        lines = [self._indent() + f"# Extension methods for {node.target_type}"]
+        for stmt in node.body:
+            if isinstance(stmt, FunctionDefinition):
+                params = ", ".join(stmt.parameters)
+                lines.append(self._indent() + f"def {stmt.name}({params})")
+                self.indent_level += 1
+                for s in stmt.body:
+                    lines.append(self._gen_statement(s))
+                self.indent_level -= 1
+                lines.append(self._indent() + "end")
+            else:
+                lines.append(self._gen_statement(stmt))
+        return "\n".join(lines)
 
 
 def generate_ruby(ast: Program) -> str:

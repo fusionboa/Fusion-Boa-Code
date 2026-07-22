@@ -396,6 +396,8 @@ Fusion lang/
 
 ## 📄 License
 
+> **Project Status:** FusionBoa is an educational, production-ready alpha multi-target compiler. It is robust for single-file processing, rapid prototyping, and scripting.
+
 Proprietary — All Rights Reserved. See [LICENSE](LICENSE) file.
 
 ---

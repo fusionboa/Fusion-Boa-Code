@@ -59,6 +59,10 @@ class JuliaGenerator:
             WithStatement: self._gen_with_statement,
             DecoratorStatement: lambda n: self._indent() + f"# @{n.name}",
             StaticMethodDeclaration: lambda n: self._gen_statement(n.declaration).replace("function ", "# static\nfunction ", 1),
+            # v0.5.0 Masterpiece
+            RecordDefinition: self._gen_record_definition,
+            PropertyDefinition: self._gen_property_definition,
+            ExtensionDefinition: self._gen_extension_definition,
         }
         gen_func = gen_map.get(type(node))
         if gen_func: return gen_func(node)
@@ -402,6 +406,56 @@ class JuliaGenerator:
         targets = ", ".join(node.targets)
         value = self._gen_expression(node.value)
         return self._indent() + f"{targets} = {value}"
+
+    # ---- v0.5.0 Masterpiece Codegen ----
+
+    def _gen_record_definition(self, node: RecordDefinition) -> str:
+        """define record -> Julia immutable struct"""
+        lines = [self._indent() + f"struct {node.name}"]
+        self.indent_level += 1
+        for fname, ftype, fdefault in node.fields:
+            jl_type = {"int": "Int", "integer": "Int", "float": "Float64",
+                       "string": "String", "bool": "Bool", "boolean": "Bool",
+                       "list": "Vector{Any}", "dict": "Dict{String,Any}",
+                       "any": "Any"}.get(ftype, "Any")
+            default = f" = {self._gen_expression(fdefault)}" if fdefault is not None else ""
+            lines.append(self._indent() + f"{fname}::{jl_type}{default}")
+        self.indent_level -= 1
+        lines.append(self._indent() + "end")
+        return "\n".join(lines)
+
+    def _gen_property_definition(self, node: PropertyDefinition) -> str:
+        """define property -> Julia getter/setter functions"""
+        lines = []
+        if node.getter_body:
+            lines.append(self._indent() + f"function {node.name}(self)")
+            self.indent_level += 1
+            for stmt in node.getter_body:
+                lines.append(self._gen_statement(stmt))
+            self.indent_level -= 1
+            lines.append(self._indent() + "end")
+        if node.setter_body:
+            lines.append(self._indent() + f"function set_{node.name}!(self, {node.setter_param})")
+            self.indent_level += 1
+            for stmt in node.setter_body:
+                lines.append(self._gen_statement(stmt))
+            self.indent_level -= 1
+            lines.append(self._indent() + "end")
+        return "\n".join(lines)
+
+    def _gen_extension_definition(self, node: ExtensionDefinition) -> str:
+        """define extension on Type -> Julia method overloading"""
+        lines = [self._indent() + f"# Extension methods for {node.target_type}"]
+        for stmt in node.body:
+            if isinstance(stmt, FunctionDefinition):
+                params = ", ".join(stmt.parameters) if stmt.parameters else ""
+                lines.append(self._indent() + f"function {stmt.name}(self::{node.target_type}, {params})" if params else self._indent() + f"function {stmt.name}(self::{node.target_type})")
+                self.indent_level += 1
+                for s in stmt.body:
+                    lines.append(self._gen_statement(s))
+                self.indent_level -= 1
+                lines.append(self._indent() + "end")
+        return "\n".join(lines)
 
 
 def generate_julia(ast: Program) -> str:

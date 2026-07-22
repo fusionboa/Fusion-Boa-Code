@@ -25,6 +25,24 @@ class ParseError(Exception):
 class Parser:
     """Recursive descent parser for the Fusion language."""
 
+    # Soft keywords: print aliases that the parser recognizes as print statements
+    # These are NOT in the lexer's KEYWORDS to avoid word-boundary collisions
+    # with variable names like 'cool_factor' or string values like "excellent".
+    _SOFT_PRINT_ALIASES = {
+        "nice", "excellent", "awesome", "superb", "cool", "sweet",
+        "neat", "brilliant", "fantastic", "wonderful", "terrific",
+    }
+
+    # Token types that indicate assignment context (for soft keyword disambiguation)
+    _ASSIGNMENT_LOOKAHEAD = {
+        TokenType.EQUAL, TokenType.PLUS_EQUAL, TokenType.MINUS_EQUAL,
+        TokenType.STAR_EQUAL, TokenType.SLASH_EQUAL, TokenType.BE,
+        TokenType.TO, TokenType.LPAREN, TokenType.DOT,
+        TokenType.PLUS_PLUS, TokenType.MINUS_MINUS,
+        TokenType.PIPE_PIPE_EQUAL, TokenType.AMPERSAND_AMPERSAND_EQUAL,
+        TokenType.QUESTION_QUESTION_EQUAL,
+    }
+
     def __init__(self, tokens: List[Token]):
         self.tokens = tokens
         self.pos = 0
@@ -144,6 +162,13 @@ class Parser:
             return self._parse_create_statement()
         if self._match(TokenType.IF):
             return self._parse_if_statement()
+        # Soft keyword: 'before' acts as 'if' when followed by a condition and colon
+        if self._check(TokenType.IDENTIFIER) and self._current().value == "before":
+            # Disambiguate: peek ahead. If next token looks like an assignment
+            # or a call, treat 'before' as a variable name (fall through to expression).
+            nxt = self._peek()
+            if nxt.type not in self._ASSIGNMENT_LOOKAHEAD:
+                return self._parse_before_if_statement()
         if self._match(TokenType.MATCH):
             return self._parse_match_statement()
         if self._match(TokenType.FOR):
@@ -250,6 +275,17 @@ class Parser:
             return self._parse_transform_statement()
         if self._match(TokenType.COUNT):
             return self._parse_count_statement()
+
+        # Soft keyword print aliases: nice, excellent, cool, sweet, etc.
+        # These are lexed as IDENTIFIER tokens (not PRINT) to avoid collisions
+        # with variable names. The parser promotes them to print statements here.
+        if self._check(TokenType.IDENTIFIER) and self._current().value in self._SOFT_PRINT_ALIASES:
+            # Disambiguate: if next token is assignment-like, treat as variable
+            nxt = self._peek()
+            if nxt.type not in self._ASSIGNMENT_LOOKAHEAD:
+                tok = self._advance()
+                expr = None if self._is_at_statement_end() else self._parse_expression()
+                return PrintStatement(expression=expr)
 
         # x++ or x-- (increment/decrement expressions as statements)
         if self._is_name_token(self._current().type):
@@ -583,10 +619,8 @@ class Parser:
         value = self._parse_expression()
         return VariableDeclaration(name=name, value=value, var_type=var_type, line=tok.line, col=tok.col)
 
-    def _parse_if_statement(self) -> IfStatement:
-        tok = self._advance()
-        condition = self._parse_expression()
-        body = self._parse_block()
+    def _parse_if_rest(self) -> tuple:
+        """Parse elif/else branches shared by if and before-if statements."""
         elif_branches = []
         else_body = []
         while self._check_any(TokenType.OR, TokenType.OTHERWISE):
@@ -599,6 +633,22 @@ class Parser:
             else:
                 else_body = self._parse_block()
                 break
+        return elif_branches, else_body
+
+    def _parse_if_statement(self) -> IfStatement:
+        tok = self._advance()
+        condition = self._parse_expression()
+        body = self._parse_block()
+        elif_branches, else_body = self._parse_if_rest()
+        return IfStatement(condition=condition, body=body, elif_branches=elif_branches,
+                           else_body=else_body, line=tok.line, col=tok.col)
+
+    def _parse_before_if_statement(self) -> IfStatement:
+        """'before condition:' as if statement (soft keyword handled by parser)."""
+        tok = self._advance()  # consume 'before' identifier
+        condition = self._parse_expression()
+        body = self._parse_block()
+        elif_branches, else_body = self._parse_if_rest()
         return IfStatement(condition=condition, body=body, elif_branches=elif_branches,
                            else_body=else_body, line=tok.line, col=tok.col)
 
