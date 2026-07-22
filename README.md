@@ -393,7 +393,7 @@ Fusion lang/
 ├── README.md             # This file
 ├── COMPLETE_SYNTAX.md    # Full v0.9.0 syntax reference (42 sections, 74+ features)
 ├── fusionboa_lang/
-│   ├── lexer/            # Tokenizer (708 keywords)
+│   ├── lexer/            # Tokenizer (725 keywords)
 │   ├── parser/           # Parser (English-like AST)
 │   ├── codegen/          # 23 code generators
 │   └── runtime/          # Multi-language executor
