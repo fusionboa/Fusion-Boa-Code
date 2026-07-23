@@ -241,6 +241,125 @@ class TokenType(Enum):
     BEGINS_WITH = auto()      # begins with (alias for starts with)
     CONCLUDES_WITH = auto()   # concludes with (alias for ends with)
 
+    # v0.9.1 tokens - Universal Polyglot Edition (ALL 23 language features)
+    # Data Structures
+    SET_TYPE = auto()          # set (data type)
+    TUPLE_TYPE = auto()        # tuple (data type)
+    SET_LITERAL = auto()       # {1, 2, 3} set literal (distinct from dict by parser context)
+    TUPLE_LITERAL = auto()     # (1, 2, 3) tuple literal
+    PAIR = auto()              # (a, b) pair / 2-tuple
+
+    # Go Concurrency (Goroutines & Channels)
+    GOROUTINE = auto()         # goroutine / go / spin up / launch
+    CHANNEL = auto()           # channel / create channel
+    SEND = auto()              # send through / transmit / pass through
+    RECEIVE = auto()           # receive / listen to / await from
+    SELECT_CHANNEL = auto()    # select on channels
+    CLOSE_CHANNEL = auto()     # close channel / shut channel
+    BUFFERED = auto()          # buffered channel (with capacity)
+    FAN_OUT = auto()           # fan out (one producer → many)
+    FAN_IN = auto()            # fan in (many producers → one)
+
+    # Rust Ownership & Borrowing
+    OWNERSHIP = auto()         # ownership / own / possess
+    BORROW = auto()            # borrow / lend
+    LIFETIME = auto()          # lifetime / lifespan
+    MUTABLE_BORROW = auto()    # mutable borrow
+    MOVE_SEMANTICS = auto()    # move / transfer / hand over
+    SMART_POINTER = auto()     # smart pointer / box / arc / rc
+    UNSAFE = auto()            # unsafe
+    RUST_DROP = auto()         # drop / dispose (Rust ownership context, distinct from collection DROP)
+
+    # C++ Pointers & Memory
+    POINTER = auto()           # pointer
+    REFERENCE = auto()         # reference
+    ADDRESS_OF = auto()        # address of / location of
+    DEREFERENCE = auto()       # dereference / value at
+    VIRTUAL = auto()           # virtual
+    OVERRIDE = auto()          # override
+    ABSTRACT = auto()          # abstract
+    INLINE = auto()            # inline
+    CONSTEXPR = auto()         # constexpr / compile time constant
+    NEW_OP = auto()            # new (heap allocation)
+    DELETE_OP = auto()         # delete / free
+
+    # R Vectorization
+    VECTORIZE = auto()         # vectorize / broadcast / element wise
+    FORMULA = auto()           # formula (R ~ syntax)
+    APPLY_FAMILY = auto()      # apply / lapply / sapply
+
+    # React / JSX
+    JSX_ELEMENT = auto()       # JSX element
+    HOOK = auto()              # hook / use state / use effect
+    COMPONENT = auto()         # component
+
+    # Ruby-specific
+    MODULE = auto()            # module (Ruby)
+    MIXIN = auto()             # mixin / include / extend
+    SYMBOL = auto()            # symbol / :name
+    BLOCK = auto()             # block (Ruby do...end)
+    YIELD_IMPLICIT = auto()    # yield (calls implicit block)
+
+    # Multiple Return Values
+    MULTI_RETURN = auto()      # return a, b, c (multiple values)
+    YIELD_FROM = auto()        # yield from (Python delegation)
+
+    # Python-specific
+    GLOBAL = auto()            # global
+    NONLOCAL = auto()          # nonlocal
+    ASYNC_WITH = auto()        # async with
+
+    # JS/TS-specific
+    TEMPLATE_TAG = auto()      # tagged template literal
+    OPTIONAL_CHAIN = auto()    # ?. deep optional chaining
+    SYMBOL_TYPE = auto()       # Symbol type (JS)
+    BIGINT_TYPE = auto()       # BigInt type (JS)
+    TYPE_ALIAS = auto()        # type alias (TS)
+    KEYOF = auto()             # keyof (TS)
+    INFER = auto()             # infer (TS)
+    CONDITIONAL_TYPE = auto()  # conditional type (TS)
+
+    # Java-specific
+    PACKAGE = auto()           # package declaration
+    SYNCHRONIZED = auto()      # synchronized
+    VOLATILE = auto()          # volatile
+    TRANSIENT = auto()         # transient
+    ANNOTATION = auto()        # annotation / @Override etc
+
+    # C#-specific
+    DELEGATE = auto()          # delegate
+    EVENT = auto()             # event
+    PARTIAL_CLASS = auto()     # partial class
+
+    # Kotlin-specific
+    OBJECT = auto()            # object (singleton)
+    COMPANION = auto()         # companion object
+    SEALED = auto()            # sealed class
+    DATA_CLASS = auto()        # data class marker
+    LATEINIT = auto()          # lateinit
+    SUSPEND = auto()           # suspend (coroutine)
+    TYPEALIAS = auto()         # typealias
+
+    # Swift-specific
+    ACTOR = auto()             # actor (Swift concurrency)
+    SUBSCRIPT = auto()         # subscript
+    PROTOCOL = auto()          # protocol (we have INTERFACE, this is for native Swift)
+
+    # Julia-specific
+    BROADCAST = auto()         # broadcast / dot operator
+    MACRO = auto()             # macro
+
+    # Go-specific extras
+    IOTA = auto()              # iota (Go enum generator)
+    STRUCT_TAG = auto()         # struct tag
+
+    # General-purpose additions
+    MUTABLE = auto()           # mutable modifier
+    IMMUTABLE_RECORD = auto()  # immutable record marker
+    PACKAGE_DECL = auto()      # package declaration (generalized)
+    NATIVE = auto()            # native / extern
+    FFI = auto()               # foreign function interface
+
     # v0.6.0 tokens - Ultimate English Syntax
     ARTICLE = auto()          # the, a, an (ignored by parser)
     ALL = auto()              # all / all of
@@ -254,6 +373,14 @@ class TokenType(Enum):
     THEN_KEYWORD = auto()     # then (control flow connector)
     SATISFY = auto()          # satisfy / match condition
     ARE = auto()              # are (for 'all items are > 5')
+
+    # v0.9.1 - More operator tokens
+    TRIPLE_DOT = auto()       # ... (spread/rest, distinct from DOT_DOT_DOT)
+    COLON_COLON_LT = auto()   # ::< (turbofish)
+    HASH = auto()             # # (Ruby symbol prefix, comment alt)
+    BACKTICK = auto()         # ` (template literal, Go struct tag)
+    DOLLAR = auto()           # $ (string interpolation prefix)
+    TILDE_ARROW = auto()      # ~> (R formula, pattern match arrow)
 
     # String interpolation
     INTERP_STRING = auto()
@@ -1019,6 +1146,307 @@ KEYWORDS = {
     "remainder": TokenType.REST,
     "everything else": TokenType.REST,
     "others": TokenType.REST,
+
+    # ============ v0.9.1 UNIVERSAL POLYGLOT EDITION ============
+    # --- Data Structures ---
+    "set collection": TokenType.SET_TYPE,
+    "hash set": TokenType.SET_TYPE,
+    "unique set": TokenType.SET_TYPE,
+    "unordered collection": TokenType.SET_TYPE,
+    "tuple": TokenType.TUPLE_TYPE,
+    "pair": TokenType.PAIR,
+    "immutable list": TokenType.TUPLE_TYPE,
+    "fixed list": TokenType.TUPLE_TYPE,
+    "read only list": TokenType.TUPLE_TYPE,
+
+    # --- Go Concurrency (Goroutines & Channels) ---
+    # NOTE: "go" NOT mapped to GOROUTINE — too common as a variable name.
+    # Use multi-word aliases instead.
+    "goroutine": TokenType.GOROUTINE,
+    "go routine": TokenType.GOROUTINE,
+    "spin up": TokenType.GOROUTINE,
+    "launch": TokenType.GOROUTINE,
+    "spawn": TokenType.GOROUTINE,
+    "fork": TokenType.GOROUTINE,
+    "run concurrently": TokenType.GOROUTINE,
+    "fire off": TokenType.GOROUTINE,
+    "kick off": TokenType.GOROUTINE,
+    "channel": TokenType.CHANNEL,
+    "create channel": TokenType.CHANNEL,
+    "make channel": TokenType.CHANNEL,
+    "typed pipe": TokenType.CHANNEL,
+    "message queue": TokenType.CHANNEL,
+    "send through": TokenType.SEND,
+    "send": TokenType.SEND,
+    "transmit": TokenType.SEND,
+    "pass through": TokenType.SEND,
+    "push onto": TokenType.SEND,
+    "pipe through": TokenType.SEND,
+    "deliver to": TokenType.SEND,
+    "forward to": TokenType.SEND,
+    "relay to": TokenType.SEND,
+    "receive": TokenType.RECEIVE,
+    "listen to": TokenType.RECEIVE,
+    "await from": TokenType.RECEIVE,
+    "pull from": TokenType.RECEIVE,
+    "take from": TokenType.RECEIVE,
+    "consume from": TokenType.RECEIVE,
+    "fetch from": TokenType.RECEIVE,
+    "select": TokenType.SELECT_CHANNEL,
+    "multiplex": TokenType.SELECT_CHANNEL,
+    "wait on": TokenType.SELECT_CHANNEL,
+    "close channel": TokenType.CLOSE_CHANNEL,
+    "shut channel": TokenType.CLOSE_CHANNEL,
+    "seal channel": TokenType.CLOSE_CHANNEL,
+    "done with channel": TokenType.CLOSE_CHANNEL,
+    "fan out": TokenType.FAN_OUT,
+    "fan in": TokenType.FAN_IN,
+    "broadcast": TokenType.FAN_OUT,
+    "scatter": TokenType.FAN_OUT,
+    # NOTE: "merge" removed from FAN_IN to avoid collision with common usage.
+    "fan in": TokenType.FAN_IN,
+    "gather": TokenType.FAN_IN,
+
+    # --- Rust Ownership & Borrowing ---
+    "ownership": TokenType.OWNERSHIP,
+    "own": TokenType.OWNERSHIP,
+    "possess": TokenType.OWNERSHIP,
+    "take ownership": TokenType.OWNERSHIP,
+    "seize": TokenType.OWNERSHIP,
+    "borrow": TokenType.BORROW,
+    "lend": TokenType.BORROW,
+    "loan": TokenType.BORROW,
+    "use temporarily": TokenType.BORROW,
+    "lifetime": TokenType.LIFETIME,
+    "lifespan": TokenType.LIFETIME,
+    "scope": TokenType.LIFETIME,
+    "validity": TokenType.LIFETIME,
+    "mutable borrow": TokenType.MUTABLE_BORROW,
+    "borrow mutably": TokenType.MUTABLE_BORROW,
+    "mutably borrow": TokenType.MUTABLE_BORROW,
+    "write borrow": TokenType.MUTABLE_BORROW,
+    "move": TokenType.MOVE_SEMANTICS,
+    "transfer": TokenType.MOVE_SEMANTICS,
+    "hand over": TokenType.MOVE_SEMANTICS,
+    "give away": TokenType.MOVE_SEMANTICS,
+    "relinquish": TokenType.MOVE_SEMANTICS,
+    "smart pointer": TokenType.SMART_POINTER,
+    "box": TokenType.SMART_POINTER,
+    "arc": TokenType.SMART_POINTER,
+    "rc": TokenType.SMART_POINTER,
+    "shared pointer": TokenType.SMART_POINTER,
+    "unsafe": TokenType.UNSAFE,
+    "dangerous": TokenType.UNSAFE,
+    "unchecked": TokenType.UNSAFE,
+    "raw": TokenType.UNSAFE,
+    "rust drop": TokenType.RUST_DROP,
+    "dispose resource": TokenType.RUST_DROP,
+    "release resource": TokenType.RUST_DROP,
+
+    # --- C++ Pointers & Memory ---
+    "pointer": TokenType.POINTER,
+    "ptr": TokenType.POINTER,
+    "raw pointer": TokenType.POINTER,
+    "reference": TokenType.REFERENCE,
+    "ref": TokenType.REFERENCE,
+    "address of": TokenType.ADDRESS_OF,
+    "location of": TokenType.ADDRESS_OF,
+    "memory address of": TokenType.ADDRESS_OF,
+    "where is": TokenType.ADDRESS_OF,
+    "dereference": TokenType.DEREFERENCE,
+    "value at": TokenType.DEREFERENCE,
+    "pointee of": TokenType.DEREFERENCE,
+    "follow pointer": TokenType.DEREFERENCE,
+    "virtual": TokenType.VIRTUAL,
+    "overridable": TokenType.VIRTUAL,
+    "polymorphic": TokenType.VIRTUAL,
+    "override": TokenType.OVERRIDE,
+    "overwrite method": TokenType.OVERRIDE,
+    "replace method": TokenType.OVERRIDE,
+    "abstract": TokenType.ABSTRACT,
+    "pure virtual": TokenType.ABSTRACT,
+    "stub": TokenType.ABSTRACT,
+    "unimplemented": TokenType.ABSTRACT,
+    "inline": TokenType.INLINE,
+    "inlined": TokenType.INLINE,
+    "embedded function": TokenType.INLINE,
+    "constexpr": TokenType.CONSTEXPR,
+    "compile time constant": TokenType.CONSTEXPR,
+    "compile time eval": TokenType.CONSTEXPR,
+    # NOTE: "new" NOT mapped — too common. Use "heap allocate" / "allocate" instead.
+    "allocate": TokenType.NEW_OP,
+    "heap allocate": TokenType.NEW_OP,
+    # NOTE: "free" NOT mapped — too common. Use "deallocate" / "release memory" instead.
+    "deallocate": TokenType.DELETE_OP,
+    "release memory": TokenType.DELETE_OP,
+
+    # --- R Vectorization ---
+    "vectorize": TokenType.VECTORIZE,
+    "element wise": TokenType.VECTORIZE,
+    "element by element": TokenType.VECTORIZE,
+    "broadcast operation": TokenType.VECTORIZE,
+    "broadcast": TokenType.VECTORIZE,
+    "formula": TokenType.FORMULA,
+    "model formula": TokenType.FORMULA,
+    "apply": TokenType.APPLY_FAMILY,
+    "lapply": TokenType.APPLY_FAMILY,
+    "sapply": TokenType.APPLY_FAMILY,
+    "vapply": TokenType.APPLY_FAMILY,
+    "apply to each": TokenType.APPLY_FAMILY,
+
+    # --- React / JSX ---
+    "jsx": TokenType.JSX_ELEMENT,
+    "element": TokenType.JSX_ELEMENT,
+    "render element": TokenType.JSX_ELEMENT,
+    "hook": TokenType.HOOK,
+    "use state": TokenType.HOOK,
+    "use effect": TokenType.HOOK,
+    "use context": TokenType.HOOK,
+    "use memo": TokenType.HOOK,
+    "use callback": TokenType.HOOK,
+    "component": TokenType.COMPONENT,
+    "react component": TokenType.COMPONENT,
+    "functional component": TokenType.COMPONENT,
+
+    # --- Ruby-specific ---
+    "module": TokenType.MODULE,
+    "mixin": TokenType.MIXIN,
+    "mix in": TokenType.MIXIN,
+    "include module": TokenType.MIXIN,
+    "extend with": TokenType.MIXIN,
+    "prepend module": TokenType.MIXIN,
+    # NOTE: "symbol" NOT mapped directly — use "named symbol" to avoid collisions.
+    "named symbol": TokenType.SYMBOL,
+    # NOTE: "block" NOT mapped directly — too common. Use qualified forms.
+    "code block": TokenType.BLOCK,
+    "do block": TokenType.BLOCK,
+    "yield to block": TokenType.YIELD_IMPLICIT,
+    "yield block": TokenType.YIELD_IMPLICIT,
+    "call block": TokenType.YIELD_IMPLICIT,
+
+    # --- Multiple Return Values ---
+    "return multiple": TokenType.MULTI_RETURN,
+    "return pair": TokenType.MULTI_RETURN,
+    "return values": TokenType.MULTI_RETURN,
+    "yield from": TokenType.YIELD_FROM,
+    "delegate yield": TokenType.YIELD_FROM,
+    "yield all": TokenType.YIELD_FROM,
+
+    # --- Python-specific ---
+    "global": TokenType.GLOBAL,
+    "nonlocal": TokenType.NONLOCAL,
+    "outer variable": TokenType.NONLOCAL,
+    "async with": TokenType.ASYNC_WITH,
+    "await with": TokenType.ASYNC_WITH,
+
+    # --- JS/TS-specific ---
+    "tagged template": TokenType.TEMPLATE_TAG,
+    "tagged string": TokenType.TEMPLATE_TAG,
+    "optional chain": TokenType.OPTIONAL_CHAIN,
+    "safe navigate": TokenType.OPTIONAL_CHAIN,
+    "Symbol": TokenType.SYMBOL_TYPE,
+    "BigInt": TokenType.BIGINT_TYPE,
+    "type alias": TokenType.TYPE_ALIAS,
+    "custom type": TokenType.TYPE_ALIAS,
+    "keyof": TokenType.KEYOF,
+    "keys of": TokenType.KEYOF,
+    "property keys of": TokenType.KEYOF,
+    "infer": TokenType.INFER,
+    "infer type": TokenType.INFER,
+    "conditional type": TokenType.CONDITIONAL_TYPE,
+    "type if": TokenType.CONDITIONAL_TYPE,
+
+    # --- Java-specific ---
+    "package": TokenType.PACKAGE,
+    "namespace package": TokenType.PACKAGE,
+    "synchronized": TokenType.SYNCHRONIZED,
+    "thread safe": TokenType.SYNCHRONIZED,
+    "locked": TokenType.SYNCHRONIZED,
+    "volatile": TokenType.VOLATILE,
+    "transient": TokenType.TRANSIENT,
+    "not serialized": TokenType.TRANSIENT,
+    "annotation": TokenType.ANNOTATION,
+    "attribute annotation": TokenType.ANNOTATION,
+
+    # --- C#-specific ---
+    "delegate": TokenType.DELEGATE,
+    "function pointer type": TokenType.DELEGATE,
+    # NOTE: "event" NOT mapped directly. Use "event handler" or "publish subscribe".
+    "event declaration": TokenType.EVENT,
+    "publish subscribe": TokenType.EVENT,
+    "event handler": TokenType.EVENT,
+    "partial class": TokenType.PARTIAL_CLASS,
+    "split class": TokenType.PARTIAL_CLASS,
+
+    # --- Kotlin-specific ---
+    "object singleton": TokenType.OBJECT,
+    # NOTE: "singleton" NOT mapped directly. Use "object singleton".
+    "single instance": TokenType.OBJECT,
+    "companion": TokenType.COMPANION,
+    "companion object": TokenType.COMPANION,
+    "static companion": TokenType.COMPANION,
+    "sealed": TokenType.SEALED,
+    "sealed class": TokenType.SEALED,
+    "closed hierarchy": TokenType.SEALED,
+    "data class": TokenType.DATA_CLASS,
+    "data record": TokenType.DATA_CLASS,
+    "lateinit": TokenType.LATEINIT,
+    "late initialize": TokenType.LATEINIT,
+    "delay init": TokenType.LATEINIT,
+    "suspend": TokenType.SUSPEND,
+    "suspend function": TokenType.SUSPEND,
+    "pausable": TokenType.SUSPEND,
+    "typealias": TokenType.TYPEALIAS,
+    "type alias": TokenType.TYPEALIAS,
+    "named type": TokenType.TYPEALIAS,
+
+    # --- Swift-specific ---
+    # NOTE: "actor" NOT mapped directly — too common. Use "concurrent actor" instead.
+    "concurrent actor": TokenType.ACTOR,
+    "isolated actor": TokenType.ACTOR,
+    "subscript": TokenType.SUBSCRIPT,
+    "index accessor": TokenType.SUBSCRIPT,
+    # NOTE: "protocol" NOT mapped directly. Use "swift protocol".
+    "swift protocol": TokenType.PROTOCOL,
+
+    # --- Julia-specific ---
+    "broadcast dot": TokenType.BROADCAST,
+    "dot broadcast": TokenType.BROADCAST,
+    "element apply": TokenType.BROADCAST,
+    # NOTE: "macro" NOT mapped directly. Use "compile time macro" instead.
+    "compile time macro": TokenType.MACRO,
+    "code generation macro": TokenType.MACRO,
+
+    # --- Go-specific extras ---
+    "iota": TokenType.IOTA,
+    "iota enum": TokenType.IOTA,
+    "auto increment enum": TokenType.IOTA,
+    "struct tag": TokenType.STRUCT_TAG,
+    "field tag": TokenType.STRUCT_TAG,
+    "json tag": TokenType.STRUCT_TAG,
+
+    # --- General-purpose additions ---
+    "mutable": TokenType.MUTABLE,
+    "changeable": TokenType.MUTABLE,
+    "modifiable": TokenType.MUTABLE,
+    "immutable record": TokenType.IMMUTABLE_RECORD,
+    "frozen record": TokenType.IMMUTABLE_RECORD,
+    "fixed record": TokenType.IMMUTABLE_RECORD,
+    "native": TokenType.NATIVE,
+    "extern": TokenType.NATIVE,
+    "foreign": TokenType.NATIVE,
+    "ffi": TokenType.FFI,
+    "foreign function": TokenType.FFI,
+    "external call": TokenType.FFI,
+    "c call": TokenType.FFI,
+
+    # --- Operator extensions ---
+    "spread": TokenType.SPREAD,
+    "expand": TokenType.SPREAD,
+    "unpack": TokenType.SPREAD,
+    "splat": TokenType.SPREAD,
+    "${": TokenType.DOLLAR,
+    "#{": TokenType.HASH,
 }
 
 

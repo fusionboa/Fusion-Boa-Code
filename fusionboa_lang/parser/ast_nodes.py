@@ -771,3 +771,459 @@ class OptionalType(ASTNode):
 
     def __repr__(self):
         return f"Optional({self.inner_type})"
+
+
+# ---- v0.9.1 Universal Polyglot Edition Nodes ----
+
+# --- Data Structures ---
+
+@dataclass
+class SetLiteral(ASTNode):
+    """A set literal {1, 2, 3} - distinct from dict by having elements not pairs."""
+    elements: List[ASTNode] = field(default_factory=list)
+
+    def __repr__(self):
+        return f"Set({self.elements})"
+
+
+@dataclass
+class TupleLiteral(ASTNode):
+    """A tuple literal (1, 2, 3) or pair (a, b)."""
+    elements: List[ASTNode] = field(default_factory=list)
+
+    def __repr__(self):
+        return f"Tuple({self.elements})"
+
+
+# --- Go Concurrency ---
+
+@dataclass
+class GoStatement(ASTNode):
+    """'goroutine: body' / 'spin up worker: body' - launch a lightweight concurrent task."""
+    name: Optional[str] = None  # optional goroutine name
+    body: List[ASTNode] = field(default_factory=list)
+    arguments: List[ASTNode] = field(default_factory=list)  # params to pass
+
+    def __repr__(self):
+        return f"Go({self.name})"
+
+
+@dataclass
+class ChannelDeclaration(ASTNode):
+    """'create channel of Type [with capacity N]' - declare a typed channel."""
+    name: str = ""
+    channel_type: str = "string"  # Type carried by channel
+    capacity: Optional[int] = None  # None = unbuffered
+
+    def __repr__(self):
+        return f"Chan({self.name}: {self.channel_type})"
+
+
+@dataclass
+class ChannelSend(ASTNode):
+    """'send value through channel' - push data into a channel."""
+    value: ASTNode = None
+    channel: str = ""
+
+    def __repr__(self):
+        return f"ChanSend({self.value} -> {self.channel})"
+
+
+@dataclass
+class ChannelReceive(ASTNode):
+    """'listen to channel with var:' / 'receive from channel' - pull data from channel."""
+    channel: str = ""
+    variable: Optional[str] = None  # bind received value to this var
+    body: List[ASTNode] = field(default_factory=list)
+    is_range: bool = False  # range over channel until closed
+
+    def __repr__(self):
+        return f"ChanRecv({self.channel} -> {self.variable})"
+
+
+@dataclass
+class ChannelSelect(ASTNode):
+    """'select: case msg from ch_a: ... case msg from ch_b: ...' - multiplex channels."""
+    cases: List[tuple] = field(default_factory=list)  # [(channel, var, body), ...]
+    timeout: Optional[ASTNode] = None  # optional timeout
+    default_body: List[ASTNode] = field(default_factory=list)
+
+    def __repr__(self):
+        return f"ChanSelect({len(self.cases)} cases)"
+
+
+@dataclass
+class ChannelClose(ASTNode):
+    """'close channel' - signal no more values."""
+    channel: str = ""
+
+    def __repr__(self):
+        return f"ChanClose({self.channel})"
+
+
+# --- Rust Ownership ---
+
+@dataclass
+class OwnershipTransfer(ASTNode):
+    """'relinquish ownership of var to target' - move semantics."""
+    variable: str = ""
+    target: Optional[str] = None  # target to transfer to
+
+    def __repr__(self):
+        return f"Move({self.variable})"
+
+
+@dataclass
+class BorrowExpression(ASTNode):
+    """'borrow variable [mutably]' - borrow a reference."""
+    variable: str = ""
+    is_mutable: bool = False
+    alias: Optional[str] = None  # bind borrowed ref to this name
+
+    def __repr__(self):
+        return f"Borrow({self.variable})"
+
+
+@dataclass
+class LifetimeAnnotation(ASTNode):
+    """'with lifetime 'a:' - explicit lifetime scope."""
+    name: str = "'a"  # lifetime name like 'a, 'scope
+    body: List[ASTNode] = field(default_factory=list)
+
+    def __repr__(self):
+        return f"Lifetime({self.name})"
+
+
+# --- C++ Pointers ---
+
+@dataclass
+class AddressOfExpression(ASTNode):
+    """'location of variable' / 'address of x' - get memory address."""
+    target: str = ""
+
+    def __repr__(self):
+        return f"AddrOf({self.target})"
+
+
+@dataclass
+class DereferenceExpression(ASTNode):
+    """'value at pointer' / 'dereference ptr' - follow pointer."""
+    pointer: ASTNode = None
+
+    def __repr__(self):
+        return f"Deref({self.pointer})"
+
+
+@dataclass
+class NewExpression(ASTNode):
+    """'new Type(args)' - heap allocation."""
+    type_name: str = ""
+    arguments: List[ASTNode] = field(default_factory=list)
+
+    def __repr__(self):
+        return f"New({self.type_name})"
+
+
+@dataclass
+class DeleteExpression(ASTNode):
+    """'delete ptr' / 'free memory' - deallocation."""
+    target: str = ""
+
+    def __repr__(self):
+        return f"Free({self.target})"
+
+
+# --- Multiple Return Values ---
+
+@dataclass
+class MultiReturnStatement(ASTNode):
+    """'return a, b, c' - return multiple values (Go, Lua, Python)."""
+    values: List[ASTNode] = field(default_factory=list)
+
+    def __repr__(self):
+        return f"MultiRet({self.values})"
+
+
+@dataclass
+class YieldFromStatement(ASTNode):
+    """'yield from iterable' - delegate to sub-generator (Python)."""
+    iterable: ASTNode = None
+
+    def __repr__(self):
+        return f"YieldFrom({self.iterable})"
+
+
+# --- Python-specific ---
+
+@dataclass
+class GlobalStatement(ASTNode):
+    """'global x, y' - declare names as global."""
+    names: List[str] = field(default_factory=list)
+
+
+@dataclass
+class NonlocalStatement(ASTNode):
+    """'nonlocal x' - declare name from enclosing scope."""
+    names: List[str] = field(default_factory=list)
+
+
+@dataclass
+class AsyncWithStatement(ASTNode):
+    """'async with resource as var: body' - async context manager."""
+    resource: ASTNode = None
+    variable: Optional[str] = None
+    body: List[ASTNode] = field(default_factory=list)
+
+
+# --- Ruby-specific ---
+
+@dataclass
+class ModuleDefinition(ASTNode):
+    """'define module Name: body' - Ruby module."""
+    name: str = ""
+    body: List[ASTNode] = field(default_factory=list)
+
+    def __repr__(self):
+        return f"Module({self.name})"
+
+
+@dataclass
+class MixinStatement(ASTNode):
+    """'include Module' / 'extend Module' - Ruby mixin."""
+    mixin_name: str = ""
+    mixin_type: str = "include"  # "include", "extend", "prepend"
+
+
+@dataclass
+class SymbolLiteral(ASTNode):
+    """':name' - Ruby/Julia symbol literal."""
+    name: str = ""
+
+    def __repr__(self):
+        return f"Sym(:{self.name})"
+
+
+@dataclass
+class BlockExpression(ASTNode):
+    """Ruby block: do |x| ... end or { |x| ... }."""
+    parameters: List[str] = field(default_factory=list)
+    body: List[ASTNode] = field(default_factory=list)
+    is_curly: bool = False  # {} vs do...end style
+
+
+@dataclass
+class YieldToBlock(ASTNode):
+    """'yield to block' / 'yield args' - calls the implicit block (Ruby)."""
+    arguments: List[ASTNode] = field(default_factory=list)
+
+
+# --- R Vectorization ---
+
+@dataclass
+class VectorizeExpression(ASTNode):
+    """'vectorize operation over collection' - element-wise apply."""
+    operation: ASTNode = None
+    collection: Optional[ASTNode] = None
+
+
+@dataclass
+class FormulaExpression(ASTNode):
+    """'y ~ x1 + x2' - R model formula."""
+    response: ASTNode = None
+    predictors: List[ASTNode] = field(default_factory=list)
+
+    def __repr__(self):
+        return f"Formula({self.response} ~ {self.predictors})"
+
+
+# --- Kotlin-specific ---
+
+@dataclass
+class ObjectDefinition(ASTNode):
+    """'define object Name: body' - Kotlin singleton."""
+    name: str = ""
+    body: List[ASTNode] = field(default_factory=list)
+    is_companion: bool = False
+
+    def __repr__(self):
+        return f"Object({self.name})"
+
+
+@dataclass
+class SealedClassDefinition(ASTNode):
+    """'define sealed class Name: body' - Kotlin sealed class hierarchy."""
+    name: str = ""
+    subclasses: List[str] = field(default_factory=list)
+    body: List[ASTNode] = field(default_factory=list)
+
+
+@dataclass
+class LateInitDeclaration(ASTNode):
+    """'lateinit var name: Type' - Kotlin late initialization."""
+    name: str = ""
+    var_type: str = ""
+
+
+@dataclass
+class SuspendFunction(ASTNode):
+    """'suspend function name with params: body' - Kotlin coroutine."""
+    declaration: FunctionDefinition = None
+
+
+# --- Swift-specific ---
+
+@dataclass
+class ActorDefinition(ASTNode):
+    """'define actor Name: body' - Swift actor for concurrency safety."""
+    name: str = ""
+    body: List[ASTNode] = field(default_factory=list)
+
+
+@dataclass
+class SubscriptDefinition(ASTNode):
+    """'define subscript with index: Type -> ReturnType: body' - Swift subscript."""
+    parameters: List[tuple] = field(default_factory=list)  # [(name, type), ...]
+    return_type: Optional[str] = None
+    getter_body: List[ASTNode] = field(default_factory=list)
+    setter_body: List[ASTNode] = field(default_factory=list)
+
+
+# --- JSX / React ---
+
+@dataclass
+class JsxElement(ASTNode):
+    """A JSX element like <div className="foo">children</div>."""
+    tag: str = ""  # element tag name
+    attributes: dict = field(default_factory=dict)  # {name: value}
+    children: List[ASTNode] = field(default_factory=list)
+    is_self_closing: bool = False
+
+    def __repr__(self):
+        return f"JSX(<{self.tag}>)"
+
+
+@dataclass
+class HookCall(ASTNode):
+    """React hook like useState(initial) or useEffect(fn, deps)."""
+    hook_name: str = ""  # useState, useEffect, useContext, etc.
+    arguments: List[ASTNode] = field(default_factory=list)
+
+    def __repr__(self):
+        return f"Hook({self.hook_name})"
+
+
+# --- TypeScript-specific ---
+
+@dataclass
+class TypeAliasDefinition(ASTNode):
+    """'type alias Name = Type' - TypeScript type alias."""
+    name: str = ""
+    aliased_type: str = ""
+    generics: List[str] = field(default_factory=list)
+
+
+@dataclass
+class KeyOfExpression(ASTNode):
+    """'keyof Type' - TypeScript keyof operator."""
+    target_type: str = ""
+
+
+# --- Julia-specific ---
+
+@dataclass
+class BroadcastExpression(ASTNode):
+    """'broadcast operation over collection' - Julia dot broadcasting."""
+    operation: ASTNode = None
+    collection: ASTNode = None
+
+
+@dataclass
+class MacroDefinition(ASTNode):
+    """'macro name with args: body' - compile-time code generation."""
+    name: str = ""
+    parameters: List[str] = field(default_factory=list)
+    body: List[ASTNode] = field(default_factory=list)
+
+
+# --- General-purpose ---
+
+@dataclass
+class MutableModifier(ASTNode):
+    """'mutable' modifier on variable/field declaration."""
+    target: ASTNode = None
+
+
+@dataclass
+class NativeDeclaration(ASTNode):
+    """'native function name with params -> Type' - FFI / extern declaration."""
+    name: str = ""
+    parameters: List[tuple] = field(default_factory=list)  # [(name, type), ...]
+    return_type: Optional[str] = None
+    library: Optional[str] = None  # external library name
+
+
+@dataclass
+class AtomicCounter(ASTNode):
+    """'create shared counter starting at N' - thread-safe atomic counter."""
+    name: str = ""
+    initial_value: ASTNode = None
+
+
+@dataclass
+class StructTag(ASTNode):
+    """Go struct field tag like `json:"name"`."""
+    key: str = ""
+    value: str = ""
+
+
+@dataclass
+class TemplateLiteral(ASTNode):
+    """Tagged template literal: tag`template string`."""
+    tag: Optional[str] = None  # e.g., styled, gql, etc.
+    parts: List[ASTNode] = field(default_factory=list)  # alternating string/expr
+
+
+# --- Java-specific additions ---
+
+@dataclass
+class PackageDeclaration(ASTNode):
+    """'package com.example.app' - Java package declaration."""
+    package_path: str = ""
+
+
+@dataclass
+class SynchronizedBlock(ASTNode):
+    """'synchronized on lock: body' - Java synchronized block."""
+    lock_object: Optional[str] = None
+    body: List[ASTNode] = field(default_factory=list)
+
+
+@dataclass
+class AnnotationDefinition(ASTNode):
+    """'@AnnotationName(args)' - Java/C# annotation/attribute."""
+    name: str = ""
+    arguments: dict = field(default_factory=dict)
+
+
+# --- C#-specific ---
+
+@dataclass
+class DelegateDefinition(ASTNode):
+    """'define delegate Name with params -> ReturnType' - C# delegate type."""
+    name: str = ""
+    parameters: List[tuple] = field(default_factory=list)
+    return_type: Optional[str] = None
+
+
+@dataclass
+class EventDeclaration(ASTNode):
+    """'event Name with delegate_type' - C# event."""
+    name: str = ""
+    delegate_type: Optional[str] = None
+
+
+@dataclass
+class PartialClassDefinition(ASTNode):
+    """'define partial class Name: body' - C# partial class."""
+    name: str = ""
+    body: List[ASTNode] = field(default_factory=list)

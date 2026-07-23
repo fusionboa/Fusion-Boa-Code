@@ -1,9 +1,26 @@
 # FusionBoa Language — Complete Syntax Reference
 
-**Version 0.9.0 "Insane Mode" — July 2026**
+**Version 0.9.1 "Universal Polyglot" — July 2026**
 
 A polyglot programming language with English-like syntax. Write once, compile to 23 targets.
-**725 keywords**, **228 token types**, **550+ syntax aliases**, **74+ language features**.
+**1,000+ keywords**, **290+ token types**, **800+ syntax aliases**, **120+ language features**.
+
+### 🆕 v0.9.1 — What's New
+- **Set & Tuple literals** — `set collection`, `tuple`, `pair` data types
+- **Go-style concurrency** — `goroutine`, `channel`, `send through`, `listen to`, `close channel`
+- **Rust ownership** — `ownership`, `borrow`, `lifetime`, `move`, `unsafe`
+- **C++ pointers** — `pointer`, `address of`, `dereference`, `heap allocate`, `deallocate`
+- **Multiple return values** — `return a, b, c`
+- **Python extras** — `global`, `nonlocal`, `yield from`, `async with`
+- **Ruby modules** — `module`, `mixin`, `named symbol`
+- **Kotlin features** — `object singleton`, `companion`, `sealed class`, `data class`, `suspend function`
+- **Swift actors** — `concurrent actor`
+- **C# delegates** — `delegate`, `publish subscribe`, `partial class`
+- **Java extras** — `package`, `synchronized`, `annotation`
+- **Julia macros** — `compile time macro`, `broadcast`
+- **R vectorization** — `vectorize`, `formula`, `apply to each`
+- **React/JSX** — JSX element and hook support
+- **All new features come with 3-10 English aliases each!**
 
 ---
 

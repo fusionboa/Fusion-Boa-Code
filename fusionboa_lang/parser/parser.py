@@ -276,6 +276,60 @@ class Parser:
         if self._match(TokenType.COUNT):
             return self._parse_count_statement()
 
+        # ---- v0.9.1 Universal Polyglot Parsers ----
+        if self._match(TokenType.GOROUTINE):
+            return self._parse_go_statement()
+        if self._match(TokenType.CHANNEL) or (self._check(TokenType.IDENTIFIER) and self._current().value == "channel"):
+            return self._parse_channel_declaration()
+        if self._match(TokenType.SEND):
+            return self._parse_channel_send()
+        if self._match(TokenType.RECEIVE):
+            return self._parse_channel_receive()
+        if self._match(TokenType.CLOSE_CHANNEL):
+            return self._parse_channel_close()
+        if self._match(TokenType.SELECT_CHANNEL):
+            return self._parse_channel_select()
+        if self._match(TokenType.MULTI_RETURN):
+            return self._parse_multi_return()
+        if self._match(TokenType.YIELD_FROM):
+            return self._parse_yield_from()
+        if self._match(TokenType.GLOBAL):
+            return self._parse_global_statement()
+        if self._match(TokenType.NONLOCAL):
+            return self._parse_nonlocal_statement()
+        if self._match(TokenType.ASYNC_WITH):
+            return self._parse_async_with()
+        if self._match(TokenType.MODULE):
+            return self._parse_module_definition()
+        if self._match(TokenType.MIXIN):
+            return self._parse_mixin_statement()
+        if self._match(TokenType.OBJECT):
+            return self._parse_object_definition()
+        if self._match(TokenType.ACTOR):
+            return self._parse_actor_definition()
+        if self._match(TokenType.SEALED):
+            return self._parse_sealed_class_definition()
+        if self._match(TokenType.SUSPEND):
+            return self._parse_suspend_function()
+        if self._match(TokenType.PACKAGE):
+            return self._parse_package_declaration()
+        if self._match(TokenType.NATIVE):
+            return self._parse_native_declaration()
+        if self._match(TokenType.SYNCHRONIZED):
+            return self._parse_synchronized_block()
+        if self._match(TokenType.DATA_CLASS):
+            return self._parse_data_class_definition()
+        if self._match(TokenType.DELEGATE):
+            return self._parse_delegate_definition()
+        if self._match(TokenType.EVENT):
+            return self._parse_event_declaration()
+        if self._match(TokenType.PARTIAL_CLASS):
+            return self._parse_partial_class_definition()
+        if self._match(TokenType.MACRO):
+            return self._parse_macro_definition()
+        if self._match(TokenType.FFI):
+            return self._parse_native_declaration()
+
         # Soft keyword print aliases: nice, excellent, cool, sweet, etc.
         # These are lexed as IDENTIFIER tokens (not PRINT) to avoid collisions
         # with variable names. The parser promotes them to print statements here.
@@ -560,36 +614,6 @@ class Parser:
             self._advance()
 
         return params, defaults, has_rest, rest_name
-
-    def _parse_class_definition(self) -> ClassDefinition:
-        tok = self._advance()
-        self._consume(TokenType.CLASS, "Expected 'class'")
-        name = self._parse_name_token()
-        
-        # Generics: define class Box<T>
-        generics = []
-        if self._check(TokenType.LESS):
-            generics = self._parse_generic_params()
-        
-        parent = None
-        if self._match(TokenType.INHERITS):
-            self._advance()
-            self._consume(TokenType.FROM, "Expected 'from' after 'inherits'")
-            parent = self._parse_name_token()
-        
-        # Implements: implements Drawable, Serializable
-        implements = []
-        if self._match(TokenType.IMPLEMENTS):
-            self._advance()
-            while True:
-                iface = self._consume(TokenType.IDENTIFIER, "Expected interface name").value
-                implements.append(iface)
-                if not self._match(TokenType.COMMA):
-                    break
-                self._advance()
-        
-        body = self._parse_block()
-        return ClassDefinition(name=name, parent=parent, body=body, generics=generics, implements=implements, line=tok.line, col=tok.col)
 
     def _parse_export_statement(self) -> ExportStatement:
         tok = self._advance()
@@ -1324,7 +1348,6 @@ class Parser:
         if self._match(TokenType.INHERITS):
             self._advance()
             if not self._match(TokenType.FROM):
-                # "extends" / "derives from" / "subclass of" style: no 'from' needed
                 parent = self.tokens[self.pos - 1].value if self.tokens[self.pos - 1].type == TokenType.IDENTIFIER else None
                 if parent is None:
                     parent = self._parse_name_token()
@@ -1344,6 +1367,341 @@ class Parser:
         
         body = self._parse_block()
         return ClassDefinition(name=name, parent=parent, body=body, generics=generics, implements=implements, line=tok.line, col=tok.col)
+
+    # ========== v0.9.1 Universal Polyglot Parser Methods ==========
+
+    def _parse_go_statement(self) -> GoStatement:
+        """goroutine name: body / spin up worker: body"""
+        tok = self._advance()
+        name = None
+        if self._check(TokenType.IDENTIFIER):
+            name = self._advance().value
+        arguments = []
+        if self._match(TokenType.WITH):
+            self._advance()
+            while not self._check_any(TokenType.COLON, TokenType.NEWLINE, TokenType.EOF):
+                arguments.append(self._parse_expression())
+                if not self._match(TokenType.COMMA):
+                    break
+                self._advance()
+        body = self._parse_block()
+        return GoStatement(name=name, body=body, arguments=arguments, line=tok.line, col=tok.col)
+
+    def _parse_channel_declaration(self) -> ChannelDeclaration:
+        """create channel of Type [with capacity N] [called name]"""
+        tok = self._advance()
+        # The lexer may have consumed "create channel" as a single CHANNEL token.
+        # Check if "of" follows; if not, consume it.
+        if self._check(TokenType.IDENTIFIER) and self._current().value == "of":
+            self._advance()
+        ch_type = self._parse_name_token()  # Use _parse_name_token since type names may be keyword tokens
+        capacity = None
+        if self._match(TokenType.WITH):
+            self._advance()
+            if self._check(TokenType.IDENTIFIER) and self._current().value == "capacity":
+                self._advance()
+            capacity_tok = self._consume(TokenType.INTEGER, "Expected capacity number")
+            capacity = int(capacity_tok.value)
+        name = "ch"
+        if self._match(TokenType.CALLED):
+            self._advance()
+            name = self._consume(TokenType.IDENTIFIER, "Expected channel name").value
+        return ChannelDeclaration(name=name, channel_type=ch_type, capacity=capacity, line=tok.line, col=tok.col)
+
+    def _parse_channel_send(self) -> ChannelSend:
+        """send value through channel"""
+        tok = self._advance()  # consume SEND token (lexer may have consumed "through" already as part of multi-word token)
+        value = self._parse_expression()
+        # The word "through"/"to" may or may not have been consumed by the lexer as part of a multi-word SEND token.
+        # Check if the next token is the channel name or a connector word.
+        if not self._is_at_statement_end() and self._check_any(TokenType.IDENTIFIER, TokenType.CHANNEL):
+            connector = self._current()
+            if connector.value in ("through", "to", "onto"):
+                self._advance()  # skip connector
+        channel = self._consume(TokenType.IDENTIFIER, "Expected channel name").value
+        return ChannelSend(value=value, channel=channel, line=tok.line, col=tok.col)
+
+    def _parse_channel_receive(self) -> ChannelReceive:
+        """listen to channel with var: body / receive from channel"""
+        tok = self._advance()  # consume RECEIVE token (may be multi-word like "listen to")
+        # The connector word may already be in the consumed token.
+        # Skip optional connector like "from", "to", "on" if present.
+        if not self._is_at_statement_end() and self._check_any(TokenType.IDENTIFIER, TokenType.FROM):
+            connector = self._current()
+            if connector.value in ("to", "from", "on"):
+                self._advance()
+        channel = self._consume(TokenType.IDENTIFIER, "Expected channel name").value
+        variable = None
+        body = []
+        if self._match(TokenType.WITH):
+            self._advance()
+            variable = self._consume(TokenType.IDENTIFIER, "Expected variable name").value
+            body = self._parse_block()
+            return ChannelReceive(channel=channel, variable=variable, body=body, is_range=True, line=tok.line, col=tok.col)
+        return ChannelReceive(channel=channel, variable=variable, line=tok.line, col=tok.col)
+
+    def _parse_channel_close(self) -> ChannelClose:
+        """close channel / shut channel"""
+        tok = self._advance()
+        channel = self._consume(TokenType.IDENTIFIER, "Expected channel name").value
+        return ChannelClose(channel=channel, line=tok.line, col=tok.col)
+
+    def _parse_channel_select(self) -> ChannelSelect:
+        """select: case msg from ch: body [timeout: body] [default: body]"""
+        tok = self._advance()
+        self._skip_newlines()
+        self._consume(TokenType.COLON, "Expected ':' after 'select'")
+        self._skip_newlines()
+        self._consume(TokenType.INDENT, "Expected indented block after select")
+        cases = []
+        default_body = []
+        timeout = None
+        while not self._check_any(TokenType.DEDENT, TokenType.EOF):
+            self._skip_newlines()
+            if self._check(TokenType.DEFAULT):
+                self._advance()
+                self._consume(TokenType.COLON, "Expected ':' after 'default'")
+                default_body = self._parse_block_contents()
+                break
+            if self._check(TokenType.CASE):
+                self._advance()
+                var_name = None
+                if self._check(TokenType.IDENTIFIER):
+                    var_name = self._advance().value
+                if self._match(TokenType.FROM):
+                    self._advance()
+                channel = self._consume(TokenType.IDENTIFIER, "Expected channel name").value
+                self._consume(TokenType.COLON, "Expected ':'")
+                case_body = self._parse_block_contents()
+                cases.append((channel, var_name, case_body))
+            elif self._check(TokenType.IDENTIFIER) and self._current().value in ("after", "timeout"):
+                self._advance()
+                timeout = self._parse_expression()
+                self._consume(TokenType.COLON, "Expected ':'")
+                # Parse timeout body (optional)
+                if not self._check_any(TokenType.DEDENT, TokenType.EOF):
+                    self._parse_block_contents()
+                break
+            else:
+                # Unknown select clause, skip
+                self._advance()
+        if self._check(TokenType.DEDENT):
+            self._advance()
+        return ChannelSelect(cases=cases, default_body=default_body, timeout=timeout, line=tok.line, col=tok.col)
+
+    def _parse_multi_return(self) -> MultiReturnStatement:
+        """return multiple values: a, b, c"""
+        tok = self._advance()
+        values = []
+        while not self._is_at_statement_end():
+            values.append(self._parse_expression())
+            if not self._match(TokenType.COMMA):
+                break
+            self._advance()
+        return MultiReturnStatement(values=values, line=tok.line, col=tok.col)
+
+    def _parse_yield_from(self) -> YieldFromStatement:
+        """yield from iterable / yield all from iterable"""
+        tok = self._advance()
+        if self._check(TokenType.IDENTIFIER) and self._current().value in ("all", "each"):
+            self._advance()
+        iterable = self._parse_expression()
+        return YieldFromStatement(iterable=iterable, line=tok.line, col=tok.col)
+
+    def _parse_global_statement(self) -> GlobalStatement:
+        """global x, y, z"""
+        tok = self._advance()
+        names = self._parse_comma_separated_idents()
+        return GlobalStatement(names=names, line=tok.line, col=tok.col)
+
+    def _parse_nonlocal_statement(self) -> NonlocalStatement:
+        """nonlocal x / outer variable x"""
+        tok = self._advance()
+        names = self._parse_comma_separated_idents()
+        return NonlocalStatement(names=names, line=tok.line, col=tok.col)
+
+    def _parse_async_with(self) -> AsyncWithStatement:
+        """async with resource as var: body"""
+        tok = self._advance()
+        resource = self._parse_expression()
+        variable = None
+        if self._match(TokenType.AS):
+            self._advance()
+            variable = self._consume(TokenType.IDENTIFIER).value
+        body = self._parse_block()
+        return AsyncWithStatement(resource=resource, variable=variable, body=body, line=tok.line, col=tok.col)
+
+    def _parse_module_definition(self) -> ModuleDefinition:
+        """define module Name: body"""
+        tok = self._advance()
+        name = self._consume(TokenType.IDENTIFIER, "Expected module name").value
+        body = self._parse_block()
+        return ModuleDefinition(name=name, body=body, line=tok.line, col=tok.col)
+
+    def _parse_mixin_statement(self) -> MixinStatement:
+        """include Module / extend Module / mix in Module"""
+        tok = self._advance()
+        mixin_type = tok.value  # "include", "extend", "prepend", "mix"
+        if mixin_type == "mix":
+            self._consume(TokenType.IDENTIFIER, "Expected 'in'", value="in")
+            mixin_type = "include"
+        name = self._consume(TokenType.IDENTIFIER, "Expected module name").value
+        return MixinStatement(mixin_name=name, mixin_type=mixin_type, line=tok.line, col=tok.col)
+
+    def _parse_object_definition(self) -> ObjectDefinition:
+        """define object Name [companion]: body"""
+        tok = self._advance()
+        is_companion = False
+        if self._match(TokenType.COMPANION):
+            is_companion = True
+            self._advance()
+        name = self._consume(TokenType.IDENTIFIER, "Expected object name").value
+        body = self._parse_block()
+        return ObjectDefinition(name=name, body=body, is_companion=is_companion, line=tok.line, col=tok.col)
+
+    def _parse_actor_definition(self) -> ActorDefinition:
+        """define actor Name: body"""
+        tok = self._advance()
+        name = self._consume(TokenType.IDENTIFIER, "Expected actor name").value
+        body = self._parse_block()
+        return ActorDefinition(name=name, body=body, line=tok.line, col=tok.col)
+
+    def _parse_sealed_class_definition(self) -> SealedClassDefinition:
+        """define sealed class Name: body"""
+        tok = self._advance()
+        if self._match(TokenType.CLASS):
+            self._advance()
+        name = self._consume(TokenType.IDENTIFIER, "Expected class name").value
+        body = self._parse_block()
+        return SealedClassDefinition(name=name, body=body, line=tok.line, col=tok.col)
+
+    def _parse_suspend_function(self) -> SuspendFunction:
+        """suspend function name with params: body"""
+        tok = self._advance()
+        self._consume(TokenType.FUNCTION, "Expected 'function'")
+        func_def = self._parse_function_definition(from_tok=tok)
+        return SuspendFunction(declaration=func_def, line=tok.line, col=tok.col)
+
+    def _parse_package_declaration(self) -> PackageDeclaration:
+        """package com.example.app"""
+        tok = self._advance()
+        parts = []
+        while not self._is_at_statement_end():
+            p = self._consume(TokenType.IDENTIFIER, "Expected package path component").value
+            parts.append(p)
+            if not self._match(TokenType.DOT):
+                break
+            self._advance()
+        return PackageDeclaration(package_path=".".join(parts), line=tok.line, col=tok.col)
+
+    def _parse_native_declaration(self) -> NativeDeclaration:
+        """native function name with params -> Type / extern function name"""
+        tok = self._advance()
+        self._consume(TokenType.FUNCTION, "Expected 'function'")
+        name = self._consume(TokenType.IDENTIFIER, "Expected function name").value
+        params = []
+        if self._match(TokenType.WITH):
+            self._advance()
+            while not self._check_any(TokenType.COLON, TokenType.NEWLINE, TokenType.ARROW, TokenType.EOF):
+                pname = self._consume(TokenType.IDENTIFIER, "Expected parameter name").value
+                ptype = "any"
+                if self._match(TokenType.COLON):
+                    self._advance()
+                    ptype = self._parse_type_name()
+                params.append((pname, ptype))
+                if not self._match(TokenType.COMMA):
+                    break
+                self._advance()
+        return_type = None
+        if self._match(TokenType.ARROW):
+            self._advance()
+            return_type = self._parse_type_name()
+        return NativeDeclaration(name=name, parameters=params, return_type=return_type, line=tok.line, col=tok.col)
+
+    def _parse_synchronized_block(self) -> SynchronizedBlock:
+        """synchronized [on lock]: body"""
+        tok = self._advance()
+        lock = None
+        if self._match(TokenType.IDENTIFIER) and self._current().value == "on":
+            self._advance()
+            lock = self._consume(TokenType.IDENTIFIER, "Expected lock object").value
+        body = self._parse_block()
+        return SynchronizedBlock(lock_object=lock, body=body, line=tok.line, col=tok.col)
+
+    def _parse_data_class_definition(self) -> ClassDefinition:
+        """data class Name: body -> define class with data semantics"""
+        tok = self._advance()
+        self._consume(TokenType.CLASS, "Expected 'class'")
+        name = self._consume(TokenType.IDENTIFIER, "Expected class name").value
+        body = self._parse_block()
+        return ClassDefinition(name=name, body=body, line=tok.line, col=tok.col)
+
+    def _parse_delegate_definition(self) -> DelegateDefinition:
+        """delegate Name with params -> ReturnType"""
+        tok = self._advance()
+        name = self._consume(TokenType.IDENTIFIER, "Expected delegate name").value
+        params = []
+        if self._match(TokenType.WITH):
+            self._advance()
+            while not self._check_any(TokenType.ARROW, TokenType.NEWLINE, TokenType.EOF):
+                pname = self._consume(TokenType.IDENTIFIER, "Expected param name").value
+                ptype = "any"
+                if self._match(TokenType.COLON):
+                    self._advance()
+                    ptype = self._parse_type_name()
+                params.append((pname, ptype))
+                if not self._match(TokenType.COMMA):
+                    break
+                self._advance()
+        return_type = None
+        if self._match(TokenType.ARROW):
+            self._advance()
+            return_type = self._parse_type_name()
+        return DelegateDefinition(name=name, parameters=params, return_type=return_type, line=tok.line, col=tok.col)
+
+    def _parse_event_declaration(self) -> EventDeclaration:
+        """event Name with DelegateType"""
+        tok = self._advance()
+        name = self._consume(TokenType.IDENTIFIER, "Expected event name").value
+        delegate_type = None
+        if self._match(TokenType.WITH):
+            self._advance()
+            delegate_type = self._consume(TokenType.IDENTIFIER, "Expected delegate type").value
+        return EventDeclaration(name=name, delegate_type=delegate_type, line=tok.line, col=tok.col)
+
+    def _parse_partial_class_definition(self) -> PartialClassDefinition:
+        """partial class Name: body"""
+        tok = self._advance()
+        self._consume(TokenType.CLASS, "Expected 'class'")
+        name = self._consume(TokenType.IDENTIFIER, "Expected class name").value
+        body = self._parse_block()
+        return PartialClassDefinition(name=name, body=body, line=tok.line, col=tok.col)
+
+    def _parse_macro_definition(self) -> MacroDefinition:
+        """macro name with args: body"""
+        tok = self._advance()
+        name = self._consume(TokenType.IDENTIFIER, "Expected macro name").value
+        params = []
+        if self._match(TokenType.WITH):
+            self._advance()
+            while not self._check_any(TokenType.COLON, TokenType.NEWLINE, TokenType.EOF):
+                p = self._consume(TokenType.IDENTIFIER, "Expected param name").value
+                params.append(p)
+                if not self._match(TokenType.COMMA):
+                    break
+                self._advance()
+        body = self._parse_block()
+        return MacroDefinition(name=name, parameters=params, body=body, line=tok.line, col=tok.col)
+
+    def _parse_comma_separated_idents(self) -> List[str]:
+        """Parse comma-separated identifier list like 'x, y, z'."""
+        items = []
+        while not self._is_at_statement_end():
+            items.append(self._parse_name_token())
+            if not self._match(TokenType.COMMA):
+                break
+            self._advance()
+        return items
 
     # ---- Expression Parsing (Pratt) ----
 

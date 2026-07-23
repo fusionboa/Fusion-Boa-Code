@@ -22,6 +22,8 @@ class PythonGenerator:
         self._needs_re_import = False
         self._needs_functools_import = False
         self._needs_dataclass_import = False
+        self._needs_queue_import = False
+        self._needs_threading_import = False
 
     def _indent(self) -> str:
         return "    " * self.indent_level
@@ -44,6 +46,10 @@ class PythonGenerator:
         if self._needs_dataclass_import:
             imports.append("from dataclasses import dataclass, field")
             imports.append("from typing import Optional")
+        if self._needs_queue_import:
+            imports.append("import queue")
+        if self._needs_threading_import:
+            imports.append("import threading")
         if imports:
             result = "\n".join(imports) + "\n\n" + result
         return result
@@ -99,6 +105,46 @@ class PythonGenerator:
             NamespaceDefinition: self._gen_namespace_definition,
             ExtensionDefinition: self._gen_extension_definition,
             LazyDeclaration: self._gen_lazy_declaration,
+            # v0.9.1 Universal Polyglot
+            SetLiteral: self._gen_set_literal,
+            TupleLiteral: self._gen_tuple_literal,
+            GoStatement: self._gen_go_statement,
+            ChannelDeclaration: self._gen_channel_declaration,
+            ChannelSend: self._gen_channel_send,
+            ChannelReceive: self._gen_channel_receive,
+            ChannelClose: self._gen_channel_close,
+            ChannelSelect: self._gen_channel_select,
+            OwnershipTransfer: self._gen_ownership_transfer,
+            BorrowExpression: self._gen_borrow,
+            LifetimeAnnotation: self._gen_lifetime,
+            MultiReturnStatement: self._gen_multi_return,
+            YieldFromStatement: self._gen_yield_from,
+            GlobalStatement: self._gen_global,
+            NonlocalStatement: self._gen_nonlocal,
+            AsyncWithStatement: self._gen_async_with,
+            ModuleDefinition: self._gen_module_definition,
+            MixinStatement: self._gen_mixin,
+            ObjectDefinition: self._gen_object_definition,
+            ActorDefinition: self._gen_actor_definition,
+            SealedClassDefinition: self._gen_sealed_class,
+            SuspendFunction: self._gen_suspend_function,
+            PackageDeclaration: self._gen_package_declaration,
+            NativeDeclaration: self._gen_native_declaration,
+            SynchronizedBlock: self._gen_synchronized_block,
+            MacroDefinition: self._gen_macro_definition,
+            DelegateDefinition: self._gen_delegate_definition,
+            EventDeclaration: self._gen_event_declaration,
+            PartialClassDefinition: self._gen_partial_class,
+            SymbolLiteral: self._gen_symbol_literal,
+            JsxElement: self._gen_jsx_element,
+            HookCall: self._gen_hook_call,
+            VectorizeExpression: self._gen_vectorize,
+            FormulaExpression: self._gen_formula,
+            AtomicCounter: self._gen_atomic_counter,
+            AddressOfExpression: self._gen_address_of,
+            DereferenceExpression: self._gen_dereference,
+            NewExpression: self._gen_new_expression,
+            DeleteExpression: self._gen_delete_expression,
         }
         gen_func = gen_map.get(type(node))
         if gen_func: return gen_func(node)
@@ -854,6 +900,238 @@ class PythonGenerator:
         """list is empty -> len(list) == 0"""
         expr = self._gen_expression(node.expression)
         return f"len({expr}) == 0"
+
+    # ========== v0.9.1 Universal Polyglot Codegen ==========
+
+    def _gen_set_literal(self, node: SetLiteral) -> str:
+        """{1, 2, 3} -> {1, 2, 3} (Python set literal)"""
+        elements = ", ".join(self._gen_expression(e) for e in node.elements)
+        return f"{{{elements}}}"
+
+    def _gen_tuple_literal(self, node: TupleLiteral) -> str:
+        """(1, 2, 3) tuple"""
+        elements = ", ".join(self._gen_expression(e) for e in node.elements)
+        if len(node.elements) == 1:
+            return f"({elements},)"
+        return f"({elements})"
+
+    def _gen_go_statement(self, node: GoStatement) -> str:
+        """goroutine name: body -> threading.Thread"""
+        self._needs_threading_import = True
+        lines = [self._indent() + "# goroutine" + (f" {node.name}:" if node.name else ":")]
+        lines.append(self._indent() + f"def __goroutine_{node.name or 'anon'}():")
+        self.indent_level += 1
+        for stmt in node.body:
+            lines.append(self._gen_statement(stmt))
+        self.indent_level -= 1
+        lines.append(self._indent() + f"threading.Thread(target=__goroutine_{node.name or 'anon'}, daemon=True).start()")
+        return "\n".join(lines)
+
+    def _gen_channel_declaration(self, node: ChannelDeclaration) -> str:
+        """create channel of Type -> queue.Queue()"""
+        self._needs_queue_import = True
+        cap = f", maxsize={node.capacity}" if node.capacity else ""
+        return self._indent() + f"{node.name} = queue.Queue(){cap}"
+
+    def _gen_channel_send(self, node: ChannelSend) -> str:
+        """send value through channel -> channel.put(value)"""
+        return self._indent() + f"{node.channel}.put({self._gen_expression(node.value)})"
+
+    def _gen_channel_receive(self, node: ChannelReceive) -> str:
+        """listen to channel with var: body -> for var in iter(channel.get, None):"""
+        if node.variable and node.body:
+            lines = [self._indent() + f"while True:"]
+            self.indent_level += 1
+            lines.append(self._indent() + f"{node.variable} = {node.channel}.get()")
+            lines.append(self._indent() + f"if {node.variable} is None: break")
+            for stmt in node.body:
+                lines.append(self._gen_statement(stmt))
+            self.indent_level -= 1
+            return "\n".join(lines)
+        return self._indent() + f"{node.channel}.get()"
+
+    def _gen_channel_close(self, node: ChannelClose) -> str:
+        """close channel -> channel.put(None) (sentinel)"""
+        return self._indent() + f"{node.channel}.put(None)  # close channel"
+
+    def _gen_channel_select(self, node: ChannelSelect) -> str:
+        return self._indent() + "# select (Python: use queue.get with timeout)"
+
+    def _gen_ownership_transfer(self, node: OwnershipTransfer) -> str:
+        return self._indent() + f"# ownership transfer: {node.variable} (Python: ref-counted, no-op)"
+
+    def _gen_borrow(self, node: BorrowExpression) -> str:
+        return f"{node.variable}"  # Python has no borrow semantics
+
+    def _gen_lifetime(self, node: LifetimeAnnotation) -> str:
+        lines = [self._indent() + f"# lifetime '{node.name}:"]
+        for stmt in node.body:
+            lines.append(self._gen_statement(stmt))
+        return "\n".join(lines)
+
+    def _gen_multi_return(self, node: MultiReturnStatement) -> str:
+        """return a, b, c -> return a, b, c"""
+        values = ", ".join(self._gen_expression(v) for v in node.values)
+        return self._indent() + f"return {values}"
+
+    def _gen_yield_from(self, node: YieldFromStatement) -> str:
+        """yield from iterable"""
+        return self._indent() + f"yield from ({self._gen_expression(node.iterable)})"
+
+    def _gen_global(self, node: GlobalStatement) -> str:
+        return self._indent() + f"global {', '.join(node.names)}"
+
+    def _gen_nonlocal(self, node: NonlocalStatement) -> str:
+        return self._indent() + f"nonlocal {', '.join(node.names)}"
+
+    def _gen_async_with(self, node: AsyncWithStatement) -> str:
+        lines = []
+        res = self._gen_expression(node.resource)
+        if node.variable:
+            lines.append(self._indent() + f"async with {res} as {node.variable}:")
+        else:
+            lines.append(self._indent() + f"async with {res}:")
+        self.indent_level += 1
+        for stmt in node.body:
+            lines.append(self._gen_statement(stmt))
+        self.indent_level -= 1
+        return "\n".join(lines)
+
+    def _gen_module_definition(self, node: ModuleDefinition) -> str:
+        """define module -> Python class as namespace"""
+        lines = [self._indent() + f"class {node.name}:"]
+        self.indent_level += 1
+        for stmt in node.body:
+            lines.append(self._gen_statement(stmt))
+        self.indent_level -= 1
+        return "\n".join(lines)
+
+    def _gen_mixin(self, node: MixinStatement) -> str:
+        """include Module -> Python multiple inheritance"""
+        return self._indent() + f"# {node.mixin_type} {node.mixin_name}"
+
+    def _gen_object_definition(self, node: ObjectDefinition) -> str:
+        """define object Name -> singleton class"""
+        companion = " (companion)" if node.is_companion else ""
+        lines = [self._indent() + f"class {node.name}{companion}:"]
+        self.indent_level += 1
+        for stmt in node.body:
+            if isinstance(stmt, FunctionDefinition):
+                lines.append(self._indent() + "@staticmethod")
+                stmt.is_static = True
+            lines.append(self._gen_statement(stmt))
+        self.indent_level -= 1
+        return "\n".join(lines)
+
+    def _gen_actor_definition(self, node: ActorDefinition) -> str:
+        """define actor -> Python class with async methods"""
+        lines = [self._indent() + f"class {node.name}:  # actor (async-safe)"]
+        self.indent_level += 1
+        for stmt in node.body:
+            lines.append(self._gen_statement(stmt))
+        self.indent_level -= 1
+        return "\n".join(lines)
+
+    def _gen_sealed_class(self, node: SealedClassDefinition) -> str:
+        """define sealed class -> Python class"""
+        lines = [self._indent() + f"class {node.name}:  # sealed"]
+        self.indent_level += 1
+        for stmt in node.body:
+            lines.append(self._gen_statement(stmt))
+        self.indent_level -= 1
+        return "\n".join(lines)
+
+    def _gen_suspend_function(self, node: SuspendFunction) -> str:
+        """suspend function -> async def"""
+        node.declaration.is_async = True
+        return self._gen_function_definition(node.declaration)
+
+    def _gen_package_declaration(self, node: PackageDeclaration) -> str:
+        return self._indent() + f"# package {node.package_path}"
+
+    def _gen_native_declaration(self, node: NativeDeclaration) -> str:
+        params = ", ".join(f"{n}: {t}" for n, t in node.parameters)
+        ret = f" -> {node.return_type}" if node.return_type else ""
+        return self._indent() + f"# native: def {node.name}({params}){ret}: ..."
+
+    def _gen_synchronized_block(self, node: SynchronizedBlock) -> str:
+        self._needs_threading_import = True
+        lock = node.lock_object or "_lock"
+        lines = [self._indent() + f"with threading.Lock() as {lock}:"]
+        self.indent_level += 1
+        for stmt in node.body:
+            lines.append(self._gen_statement(stmt))
+        self.indent_level -= 1
+        return "\n".join(lines)
+
+    def _gen_macro_definition(self, node: MacroDefinition) -> str:
+        params = ", ".join(node.parameters)
+        lines = [self._indent() + f"# macro {node.name}({params}):"]
+        for stmt in node.body:
+            lines.append(self._gen_statement(stmt))
+        return "\n".join(lines)
+
+    def _gen_delegate_definition(self, node: DelegateDefinition) -> str:
+        params = ", ".join(f"{n}: {t}" for n, t in node.parameters)
+        ret = f" -> {node.return_type}" if node.return_type else ""
+        return self._indent() + f"# delegate: Callable[[{params}], {ret}]"
+
+    def _gen_event_declaration(self, node: EventDeclaration) -> str:
+        return self._indent() + f"# event {node.name}"
+
+    def _gen_partial_class(self, node: PartialClassDefinition) -> str:
+        lines = [self._indent() + f"class {node.name}:  # partial"]
+        self.indent_level += 1
+        for stmt in node.body:
+            lines.append(self._gen_statement(stmt))
+        self.indent_level -= 1
+        return "\n".join(lines)
+
+    def _gen_symbol_literal(self, node: SymbolLiteral) -> str:
+        """':name' -> symbol-like string"""
+        return repr(f":{node.name}")
+
+    def _gen_jsx_element(self, node: JsxElement) -> str:
+        """JSX element -> Python string (for React rendering)"""
+        attrs = " ".join(f'{k}="{v}"' for k, v in node.attributes.items())
+        children = "".join(self._gen_expression(c) for c in node.children)
+        if node.is_self_closing:
+            return f'"<{node.tag} {attrs}/>"'
+        return f'"<{node.tag} {attrs}>{children}</{node.tag}>"'
+
+    def _gen_hook_call(self, node: HookCall) -> str:
+        args = ", ".join(self._gen_expression(a) for a in node.arguments)
+        return f"{node.hook_name}({args})"
+
+    def _gen_vectorize(self, node: VectorizeExpression) -> str:
+        """vectorize operation over collection -> list comprehension"""
+        if node.collection:
+            coll = self._gen_expression(node.collection)
+            op = self._gen_expression(node.operation)
+            return f"[{op}(x) for x in {coll}]"
+        return self._gen_expression(node.operation)
+
+    def _gen_formula(self, node: FormulaExpression) -> str:
+        resp = self._gen_expression(node.response)
+        preds = " + ".join(self._gen_expression(p) for p in node.predictors)
+        return f"({resp} ~ {preds})"
+
+    def _gen_atomic_counter(self, node: AtomicCounter) -> str:
+        init = self._gen_expression(node.initial_value)
+        return self._indent() + f"import threading; {node.name} = threading.local(); {node.name}.value = {init}"
+
+    def _gen_address_of(self, node: AddressOfExpression) -> str:
+        return f"id({node.target})"  # Python: id() gives memory address
+
+    def _gen_dereference(self, node: DereferenceExpression) -> str:
+        return self._gen_expression(node.pointer)  # Python: no real dereference
+
+    def _gen_new_expression(self, node: NewExpression) -> str:
+        args = ", ".join(self._gen_expression(a) for a in node.arguments)
+        return f"{node.type_name}({args})"
+
+    def _gen_delete_expression(self, node: DeleteExpression) -> str:
+        return self._indent() + f"del {node.target}"
 
 
 def generate_python(ast: Program) -> str:
