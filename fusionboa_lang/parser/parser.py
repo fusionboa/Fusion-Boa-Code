@@ -9,6 +9,7 @@ keyword arguments, string interpolation, spread, export, and all base features.
 
 from typing import List, Optional
 from ..lexer.tokens import Token, TokenType
+from ..errors.error_handler import suggest_keyword
 from .ast_nodes import *
 
 
@@ -382,6 +383,14 @@ class Parser:
                 }
                 op = op_map.get(op_token.type, "||")
                 return AugmentedAssignment(target=name, operator=op, value=value, line=name_tok.line, col=name_tok.col)
+
+        # Keyword misspelling check: before falling through to expression parsing,
+        # check if the current identifier looks like a misspelled keyword
+        if self._check(TokenType.IDENTIFIER):
+            suggestion = suggest_keyword(self._current().value)
+            if suggestion:
+                tok = self._current()
+                raise ParseError(f"Unknown word '{tok.value}'. {suggestion}?", tok)
 
         expr = self._parse_expression()
         tok = self._current()
@@ -2195,7 +2204,12 @@ class Parser:
             self._advance()
             return Call(callee=Identifier(name="input"), arguments=[])
 
-        raise ParseError(f"Unexpected token: {token}", token)
+        hint = ""
+        if token.type == TokenType.IDENTIFIER:
+            suggestion = suggest_keyword(token.value)
+            if suggestion:
+                hint = f" {suggestion}"
+        raise ParseError(f"Unexpected token: {token}.{hint}", token)
 
     def _parse_bracket_expression(self) -> ASTNode:
         """Parse [ ... ] - could be list literal, list comprehension, or slice."""
