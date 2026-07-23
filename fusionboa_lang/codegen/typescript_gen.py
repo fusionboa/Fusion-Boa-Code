@@ -410,13 +410,13 @@ class TypeScriptGenerator:
         return self._indent() + f"return [{vals}] as const;"
 
     def _gen_yield_from(self, node):
-        return self._indent() + f"yield* {self._gen_expression(node.expression)};"
+        return self._indent() + f"yield* {self._gen_expression(node.iterable)};"
 
     def _gen_global(self, node):
-        return self._indent() + f"// global {node.name}"
+        return self._indent() + f"// global {', '.join(node.names)}"
 
     def _gen_nonlocal(self, node):
-        return self._indent() + f"// nonlocal {node.name}"
+        return self._indent() + f"// nonlocal {', '.join(node.names)}"
 
     def _gen_async_with(self, node):
         resource = self._gen_expression(node.resource)
@@ -441,8 +441,15 @@ class TypeScriptGenerator:
         return "\n".join(lines)
 
     def _gen_go_statement(self, node):
-        args = ", ".join(self._gen_expression(a) for a in node.arguments) if node.arguments else ""
-        return self._indent() + f"(async () => {{ await {node.target}({args}); }})();  // goroutine"
+        """'goroutine: body' -> async IIFE."""
+        name = node.name or "anonymous"
+        lines = [self._indent() + f"// goroutine: {name}"]
+        lines.append(self._indent() + "(async () => {")
+        self.indent_level += 1
+        for s in node.body: lines.append(self._gen_statement(s))
+        self.indent_level -= 1
+        lines.append(self._indent() + "})();")
+        return "\n".join(lines)
 
     def _gen_channel_declaration(self, node):
         return self._indent() + f"let {node.name}: any[] = [];  // channel"

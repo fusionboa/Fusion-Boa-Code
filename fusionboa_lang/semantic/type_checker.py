@@ -84,7 +84,7 @@ class TypeChecker:
         try:
             for statement in self.ast.statements:
                 self._check_statement(statement)
-        except Exception as e:
+        except (AttributeError, TypeError, ValueError, KeyError, IndexError) as e:
             self.errors.append(TypeError(
                 line=0, col=0,
                 message=f"Type checker internal error: {e}",
