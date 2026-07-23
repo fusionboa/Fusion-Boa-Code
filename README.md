@@ -16,7 +16,7 @@
     <img src="https://img.shields.io/badge/targets-23-blue" alt="Targets">
   </a>
   <a href="https://github.com/fusionboa/Fusion-Boa-Code">
-    <img src="https://img.shields.io/badge/keywords-902-orange" alt="Keywords">
+    <img src="https://img.shields.io/badge/keywords-250-orange" alt="Keywords">
   </a>
   <a href="https://github.com/fusionboa/Fusion-Boa-Code/releases">
     <img src="https://img.shields.io/badge/version-v0.9.2-purple" alt="Version">
@@ -371,7 +371,7 @@ fn main() { println!("Hello from Rust!"); }
 
 | Metric | Count |
 |--------|-------|
-| Keywords | **902** |
+| Keywords | **250** |
 | Token types | **318** |
 | Syntax aliases | **902** |
 | Compile targets | **23** |
@@ -393,7 +393,7 @@ Fusion lang/
 ├── README.md             # This file
 ├── COMPLETE_SYNTAX.md    # Full v0.9.2 syntax reference (50+ sections, 90+ features)
 ├── fusionboa_lang/
-│   ├── lexer/            # Tokenizer (902 keywords, 318 token types)
+│   ├── lexer/            # Tokenizer (250 keywords, 902 aliases, 318 token types)
 │   ├── parser/           # Parser (English-like AST)
 │   ├── codegen/          # 23 code generators
 │   └── runtime/          # Multi-language executor
