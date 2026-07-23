@@ -64,6 +64,27 @@ class SwiftGenerator:
             RecordDefinition: self._gen_record_definition,
             PropertyDefinition: self._gen_property_definition,
             ExtensionDefinition: self._gen_extension_definition,
+            # v0.9.1+ Universal Polyglot
+            SetLiteral: self._gen_set_stmt,
+            TupleLiteral: lambda n: self._indent() + f"({', '.join(str(e) for e in n.elements)})" if n.elements else self._indent() + "()",
+            MultiReturnStatement: self._gen_multi_return,
+            YieldFromStatement: lambda n: self._indent() + f"// yield from: {self._gen_expression(n.iterable)}",
+            GoStatement: lambda n: self._indent() + f"// goroutine: {n.name or 'anonymous'} (use Task.detached)",
+            ChannelDeclaration: lambda n: self._indent() + f"// channel: {n.name}",
+            ChannelSelect: lambda n: self._indent() + f"// select {len(n.cases)} channels",
+            ChannelClose: lambda n: self._indent() + f"// channel close",
+            SynchronizedBlock: self._gen_synchronized,
+            AsyncWithStatement: self._gen_async_with,
+            ModuleDefinition: lambda n: self._indent() + f"// module {n.name}",
+            MixinStatement: lambda n: self._indent() + f"// {n.mixin_type} {n.mixin_name}",
+            ObjectDefinition: lambda n: self._indent() + f"// object {n.name} (Swift: use singleton pattern)",
+            ActorDefinition: self._gen_actor,
+            SealedClassDefinition: lambda n: self._indent() + f"// sealed class {n.name} (use enum with associated values)",
+            NewExpression: lambda n: self._indent() + f"{n.type_name}({', '.join(self._gen_expression(a) for a in n.arguments)})",
+            DeleteExpression: lambda n: self._indent() + f"// delete {n.target} (ARC handles)",
+            GlobalStatement: lambda n: self._indent() + f"// global {', '.join(n.names)}",
+            AtomicCounter: lambda n: self._indent() + f"let {n.name} = OSAtomicInt32({self._gen_expression(n.initial_value) if n.initial_value else '0'})",
+            SubscriptDefinition: self._gen_subscript,
         }
         gen_func = gen_map.get(type(node))
         if gen_func: return gen_func(node)
@@ -98,6 +119,27 @@ class SwiftGenerator:
         if isinstance(node, GeneratorExpression): return f"/* generator */"
         if isinstance(node, IncrementExpression): return f"{node.target} += 1"
         if isinstance(node, DecrementExpression): return f"{node.target} -= 1"
+        # v0.9.1+ Expression nodes
+        if isinstance(node, SetLiteral):
+            el = ", ".join(self._gen_expression(e) for e in node.elements)
+            return f"Set([{el}])"
+        if isinstance(node, TupleLiteral):
+            el = ", ".join(self._gen_expression(e) for e in node.elements)
+            return f"({el})"
+        if isinstance(node, SymbolLiteral): return f"/* :{node.name} */"
+        if isinstance(node, BlockExpression): return f"/* block */"
+        if isinstance(node, JsxElement): return f"/* JSX:{node.tag} */"
+        if isinstance(node, HookCall): return f"/* {node.hook_name}() */"
+        if isinstance(node, NewExpression):
+            args = ", ".join(self._gen_expression(a) for a in node.arguments)
+            return f"{node.type_name}({args})"
+        if isinstance(node, DeleteExpression): return f"/* delete {node.target} */"
+        if isinstance(node, BroadcastExpression): return f"/* broadcast */"
+        if isinstance(node, VectorizeExpression): return f"/* vectorize */"
+        if isinstance(node, FormulaExpression): return f"/* formula */"
+        if isinstance(node, KeyOfExpression): return f"/* keyof {node.target_type} */"
+        if isinstance(node, TemplateLiteral): return f"/* template literal */"
+        if isinstance(node, YieldToBlock): return f"/* yield to block */"
         return f"/* Unknown: {type(node).__name__} */"
 
     def _gen_literal(self, node: Literal) -> str:
@@ -441,6 +483,48 @@ class SwiftGenerator:
                 lines.append(self._indent() + "}")
             else:
                 lines.append(self._gen_statement(stmt))
+        self.indent_level -= 1
+        lines.append(self._indent() + "}")
+        return "\n".join(lines)
+
+
+    # ---- v0.9.1+ Handler Methods ----
+
+    def _gen_set_stmt(self, node):
+        el = ", ".join(str(e) for e in node.elements)
+        return self._indent() + f"Set([{el}])"
+
+    def _gen_multi_return(self, node):
+        vals = ", ".join(self._gen_expression(v) for v in node.values)
+        return self._indent() + f"return ({vals})"
+
+    def _gen_synchronized(self, node):
+        lock = node.lock_object or "_lock"
+        lines = [self._indent() + f"objc_sync_enter({lock})"]
+        for s in node.body: lines.append(self._gen_statement(s))
+        lines.append(self._indent() + f"objc_sync_exit({lock})")
+        return "\n".join(lines)
+
+    def _gen_async_with(self, node):
+        r = self._gen_expression(node.resource)
+        lines = [self._indent() + f"// async with: {r}"]
+        for s in node.body: lines.append(self._gen_statement(s))
+        return "\n".join(lines)
+
+    def _gen_actor(self, node):
+        lines = [self._indent() + f"actor {node.name} {{"]
+        self.indent_level += 1
+        for s in node.body: lines.append(self._gen_statement(s))
+        self.indent_level -= 1
+        lines.append(self._indent() + "}")
+        return "\n".join(lines)
+
+    def _gen_subscript(self, node):
+        params = ", ".join(f"{name}: {typ}" for name, typ in node.parameters)
+        lines = [self._indent() + f"subscript({params}) -> {node.return_type or 'Any'} {{"]
+        self.indent_level += 1
+        if node.getter_body:
+            for s in node.getter_body: lines.append(self._gen_statement(s))
         self.indent_level -= 1
         lines.append(self._indent() + "}")
         return "\n".join(lines)

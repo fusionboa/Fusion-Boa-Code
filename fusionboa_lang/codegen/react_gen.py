@@ -108,6 +108,28 @@ class ReactGenerator:
         if isinstance(node, RecordDefinition): return self._gen_record_definition(node)
         if isinstance(node, PropertyDefinition): return self._indent() + f"// Property: {node.name} (not applicable in React JSX)"
         if isinstance(node, ExtensionDefinition): return self._indent() + f"// Extension: {node.target_type} (not applicable in React JSX)"
+        # v0.9.1+ Universal Polyglot
+        if isinstance(node, SetLiteral): return self._indent() + f"new Set([{', '.join(str(e) for e in node.elements)}]);"
+        if isinstance(node, TupleLiteral): return self._indent() + f"[{', '.join(str(e) for e in node.elements)}];  // tuple"
+        if isinstance(node, MultiReturnStatement):
+            vals = ", ".join(self._gen_expression(v) for v in node.values)
+            return self._indent() + f"return [{vals}];"
+        if isinstance(node, YieldFromStatement): return self._indent() + f"yield* {self._gen_expression(node.iterable)};"
+        if isinstance(node, GoStatement): return self._indent() + f"// goroutine: {node.name or 'anonymous'} (use Web Worker)"
+        if isinstance(node, ChannelDeclaration): return self._indent() + f"// channel: {node.name}"
+        if isinstance(node, ChannelSelect): return self._indent() + f"// select {len(node.cases)} channels"
+        if isinstance(node, ChannelClose): return self._indent() + f"// channel close"
+        if isinstance(node, SynchronizedBlock): return self._indent() + f"// synchronized"
+        if isinstance(node, AsyncWithStatement): return self._indent() + f"// async with"
+        if isinstance(node, ModuleDefinition): return self._indent() + f"// module {node.name} (use ES module)"
+        if isinstance(node, MixinStatement): return self._indent() + f"// {node.mixin_type} {node.mixin_name}"
+        if isinstance(node, ObjectDefinition): return self._indent() + f"// object {node.name} (singleton)"
+        if isinstance(node, ActorDefinition): return self._indent() + f"// actor {node.name}"
+        if isinstance(node, SealedClassDefinition): return self._indent() + f"// sealed class {node.name}"
+        if isinstance(node, NewExpression): return self._indent() + f"new {node.type_name}({', '.join(self._gen_expression(a) for a in node.arguments)})();"
+        if isinstance(node, DeleteExpression): return self._indent() + f"// delete {node.target} (GC handles)"
+        if isinstance(node, JsxElement): return self._gen_jsx_element(node)
+        if isinstance(node, HookCall): return self._gen_hook(node)
         return self._indent() + f"// {type(node).__name__}"
 
     def _gen_expression(self, node: ASTNode) -> str:
@@ -158,6 +180,31 @@ class ReactGenerator:
             return f"{it}.map({node.variable} => {expr}){cond}"
         if isinstance(node, IncrementExpression): return f"++{node.target}" if node.prefix else f"{node.target}++"
         if isinstance(node, DecrementExpression): return f"--{node.target}" if node.prefix else f"{node.target}--"
+        # v0.9.1+ Expression nodes
+        if isinstance(node, SetLiteral):
+            el = ", ".join(self._gen_expression(e) for e in node.elements)
+            return f"new Set([{el}])"
+        if isinstance(node, TupleLiteral):
+            el = ", ".join(self._gen_expression(e) for e in node.elements)
+            return f"[{el}]"
+        if isinstance(node, JsxElement): return self._gen_jsx_element_expr(node)
+        if isinstance(node, HookCall):
+            args = ", ".join(self._gen_expression(a) for a in node.arguments)
+            return f"{node.hook_name}({args})"
+        if isinstance(node, SymbolLiteral): return f"/* :{node.name} */"
+        if isinstance(node, BlockExpression): return f"/* block */"
+        if isinstance(node, NewExpression):
+            args = ", ".join(self._gen_expression(a) for a in node.arguments)
+            return f"new {node.type_name}({args})"
+        if isinstance(node, DeleteExpression): return f"/* delete {node.target} */"
+        if isinstance(node, BroadcastExpression): return f"/* broadcast */"
+        if isinstance(node, VectorizeExpression): return f"/* vectorize */"
+        if isinstance(node, FormulaExpression): return f"/* formula */"
+        if isinstance(node, KeyOfExpression): return f"/* keyof {node.target_type} */"
+        if isinstance(node, TemplateLiteral):
+            parts = ", ".join(self._gen_expression(p) for p in node.parts)
+            return (f"{node.tag}`{parts}`") if node.tag else f"`{parts}`"
+        if isinstance(node, YieldToBlock): return f"/* yield to block */"
         return "null"
 
     def _gen_component(self, node: FunctionDefinition) -> str:
@@ -380,6 +427,34 @@ class ReactGenerator:
         self.indent_level -= 1
         lines.append(self._indent() + "}")
         return "\n".join(lines)
+
+
+    def _gen_jsx_element(self, node):
+        """Generate a JSX element as a statement."""
+        return self._indent() + self._gen_jsx_element_expr(node) + ";"
+
+    def _gen_jsx_element_expr(self, node):
+        """Generate JSX element as an expression."""
+        attrs = ""
+        for k, v in node.attributes.items():
+            val = self._gen_expression(v) if not isinstance(v, str) else repr(v)
+            react_key = self._fusionboa_to_react_attr(k)
+            attrs += f" {react_key}={{{val}}}" if not val.startswith('"') else f" {react_key}={val}"
+        if node.is_self_closing or not node.children:
+            return f"<{node.tag}{attrs} />"
+        children = []
+        for c in node.children:
+            if isinstance(c, Literal) and isinstance(c.value, str):
+                children.append(c.value)
+            else:
+                children.append("{" + self._gen_expression(c) + "}")
+        child_str = "\n".join(children)
+        return f"<{node.tag}{attrs}>\n{child_str}\n</{node.tag}>"
+
+    def _gen_hook(self, node):
+        """Generate a React hook call as a statement."""
+        args = ", ".join(self._gen_expression(a) for a in node.arguments)
+        return self._indent() + f"const __hook = {node.hook_name}({args});"
 
 
 def generate_react(ast: Program) -> str:

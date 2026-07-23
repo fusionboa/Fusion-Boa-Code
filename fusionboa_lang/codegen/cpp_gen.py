@@ -79,6 +79,27 @@ class CppGenerator:
             RecordDefinition: self._gen_record_definition,
             PropertyDefinition: self._gen_property_definition,
             ExtensionDefinition: self._gen_extension_definition,
+            # v0.9.1+ Universal Polyglot
+            SetLiteral: self._gen_set_stmt,
+            TupleLiteral: self._gen_tuple_stmt,
+            MultiReturnStatement: self._gen_multi_return,
+            YieldFromStatement: self._gen_yield_from,
+            GoStatement: lambda n: self._indent() + f"// goroutine: {n.name or 'anonymous'}",
+            ChannelDeclaration: lambda n: self._indent() + f"// channel: {n.name}",
+            ChannelSelect: lambda n: self._indent() + f"// select {len(n.cases)} channels",
+            ChannelClose: lambda n: self._indent() + f"// channel close",
+            SynchronizedBlock: self._gen_synchronized,
+            AsyncWithStatement: lambda n: self._indent() + f"// async with",
+            ModuleDefinition: lambda n: self._indent() + f"// module {n.name}",
+            MixinStatement: lambda n: self._indent() + f"// {n.mixin_type} {n.mixin_name}",
+            ObjectDefinition: lambda n: self._indent() + f"// object {n.name} (singleton)",
+            ActorDefinition: lambda n: self._indent() + f"// actor {n.name}",
+            SealedClassDefinition: lambda n: self._indent() + f"// sealed class {n.name}",
+            NewExpression: self._gen_new_stmt,
+            DeleteExpression: self._gen_delete_stmt,
+            GlobalStatement: lambda n: self._indent() + f"// global {', '.join(n.names)}",
+            AtomicCounter: lambda n: self._indent() + f"std::atomic<int> {n.name}{{{self._gen_expression(n.initial_value)}}};" if n.initial_value else self._indent() + f"std::atomic<int> {n.name}{{0}};",
+            PackageDeclaration: lambda n: self._indent() + f"// package {n.package_path}",
         }
         gen_func = gen_map.get(type(node))
         if gen_func: return gen_func(node)
@@ -116,6 +137,28 @@ class CppGenerator:
         if isinstance(node, GeneratorExpression): return self._gen_generator(node)
         if isinstance(node, IncrementExpression): return f"++{node.target}" if node.prefix else f"{node.target}++"
         if isinstance(node, DecrementExpression): return f"--{node.target}" if node.prefix else f"{node.target}--"
+        # v0.9.1+ Expression nodes
+        if isinstance(node, SetLiteral):
+            self._needs_vector = True
+            el = ", ".join(self._gen_expression(e) for e in node.elements)
+            return f"__fusionboa_set({{{el}}})"
+        if isinstance(node, TupleLiteral):
+            el = ", ".join(self._gen_expression(e) for e in node.elements)
+            return f"make_tuple({el})"
+        if isinstance(node, SymbolLiteral): return f"/* :{node.name} */"
+        if isinstance(node, BlockExpression): return f"/* block */"
+        if isinstance(node, JsxElement): return f"/* JSX:{node.tag} */"
+        if isinstance(node, HookCall): return f"/* {node.hook_name}() */"
+        if isinstance(node, NewExpression):
+            args = ", ".join(self._gen_expression(a) for a in node.arguments)
+            return f"make_unique<{node.type_name}>({args})" if args else f"make_unique<{node.type_name}>()"
+        if isinstance(node, DeleteExpression): return f"/* delete {node.target} */"
+        if isinstance(node, BroadcastExpression): return f"/* broadcast */"
+        if isinstance(node, VectorizeExpression): return f"/* vectorize */"
+        if isinstance(node, FormulaExpression): return f"/* formula */"
+        if isinstance(node, KeyOfExpression): return f"/* keyof {node.target_type} */"
+        if isinstance(node, TemplateLiteral): return f"/* template literal */"
+        if isinstance(node, YieldToBlock): return f"/* yield to block */"
         return f"/* Unknown: {type(node).__name__} */"
 
     def _gen_dict_comprehension(self, node):
@@ -491,6 +534,47 @@ class CppGenerator:
             else:
                 lines.append(self._gen_statement(stmt))
         return "\n".join(lines)
+
+
+    # ---- v0.9.1+ Handler Methods ----
+
+    def _gen_set_stmt(self, node):
+        """Set literal as standalone statement -> comment."""
+        return self._indent() + f"// set: {', '.join(str(e) for e in node.elements)}"
+
+    def _gen_tuple_stmt(self, node):
+        """Tuple literal as standalone statement -> comment."""
+        return self._indent() + f"// tuple: {', '.join(str(e) for e in node.elements)}"
+
+    def _gen_multi_return(self, node):
+        """'return a, b, c' -> make_tuple or structured binding."""
+        vals = ", ".join(self._gen_expression(v) for v in node.values)
+        return self._indent() + f"return make_tuple({vals});"
+
+    def _gen_yield_from(self, node):
+        """'yield from iterable' -> comment (not natively supported in C++)."""
+        it = self._gen_expression(node.iterable)
+        return self._indent() + f"// yield from: {it}"
+
+    def _gen_synchronized(self, node):
+        """'synchronized on lock: body' -> lock_guard."""
+        lock = node.lock_object or "_mutex"
+        lines = [self._indent() + "{",
+                 self._indent() + f"    std::lock_guard<std::mutex> __lock({lock});"]
+        self.indent_level += 1
+        for s in node.body: lines.append(self._gen_statement(s))
+        self.indent_level -= 1
+        lines.append(self._indent() + "}")
+        return "\n".join(lines)
+
+    def _gen_new_stmt(self, node):
+        """'new Type(args)' -> make_unique statement."""
+        args = ", ".join(self._gen_expression(a) for a in node.arguments)
+        return self._indent() + f"auto __ptr = make_unique<{node.type_name}>({args});"
+
+    def _gen_delete_stmt(self, node):
+        """'delete ptr' -> reset unique_ptr."""
+        return self._indent() + f"// delete {node.target} (C++ unique_ptr handles this automatically)"
 
 
 def generate_cpp(ast: Program) -> str:

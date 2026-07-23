@@ -76,6 +76,26 @@ class RustGenerator:
         if isinstance(node, RecordDefinition): return self._gen_record_definition(node)
         if isinstance(node, PropertyDefinition): return self._gen_property_definition(node)
         if isinstance(node, ExtensionDefinition): return self._gen_extension_definition(node)
+        # v0.9.1+ Universal Polyglot
+        if isinstance(node, SetLiteral): return self._gen_set_stmt(node)
+        if isinstance(node, TupleLiteral): return self._gen_tuple_stmt(node)
+        if isinstance(node, MultiReturnStatement): return self._gen_multi_return(node)
+        if isinstance(node, YieldFromStatement): return self._indent() + f"// yield from: {self._gen_expression(node.iterable)}"
+        if isinstance(node, GoStatement): return self._indent() + f"// goroutine: {node.name or 'anonymous'} (use tokio::spawn)"
+        if isinstance(node, ChannelDeclaration): return self._indent() + f"// channel: {node.name} (use tokio::sync::mpsc)"
+        if isinstance(node, ChannelSelect): return self._indent() + f"// select {len(node.cases)} channels (use tokio::select!)"
+        if isinstance(node, ChannelClose): return self._indent() + f"// channel close"
+        if isinstance(node, SynchronizedBlock): return self._gen_synchronized(node)
+        if isinstance(node, AsyncWithStatement): return self._indent() + f"// async with"
+        if isinstance(node, ModuleDefinition): return self._gen_module_def(node)
+        if isinstance(node, MixinStatement): return self._indent() + f"// {node.mixin_type} {node.mixin_name}"
+        if isinstance(node, ObjectDefinition): return self._indent() + f"// object {node.name} (singleton)"
+        if isinstance(node, ActorDefinition): return self._indent() + f"// actor {node.name}"
+        if isinstance(node, SealedClassDefinition): return self._gen_sealed_class(node)
+        if isinstance(node, NewExpression): return self._gen_new_stmt(node)
+        if isinstance(node, DeleteExpression): return self._gen_delete_stmt(node)
+        if isinstance(node, GlobalStatement): return self._indent() + f"// global {', '.join(node.names)}"
+        if isinstance(node, AtomicCounter): return self._gen_atomic(node)
         return self._indent() + f"// {type(node).__name__};"
 
     def _gen_expression(self, node: ASTNode) -> str:
@@ -132,6 +152,27 @@ class RustGenerator:
         if isinstance(node, GeneratorExpression): return self._gen_generator(node)
         if isinstance(node, IncrementExpression): return f"{node.target} += 1"
         if isinstance(node, DecrementExpression): return f"{node.target} -= 1"
+        # v0.9.1+ Expression nodes
+        if isinstance(node, SetLiteral):
+            el = ", ".join(self._gen_expression(e) for e in node.elements)
+            return f"vec![{el}].into_iter().collect::<std::collections::HashSet<_>>()"
+        if isinstance(node, TupleLiteral):
+            el = ", ".join(self._gen_expression(e) for e in node.elements)
+            return f"({el})"
+        if isinstance(node, SymbolLiteral): return f"/* :{node.name} */"
+        if isinstance(node, BlockExpression): return f"/* block */"
+        if isinstance(node, JsxElement): return f"/* JSX:{node.tag} */"
+        if isinstance(node, HookCall): return f"/* {node.hook_name}() */"
+        if isinstance(node, NewExpression):
+            args = ", ".join(self._gen_expression(a) for a in node.arguments)
+            return f"Box::new({node.type_name}{{{args}}})" if args else f"Box::new({node.type_name}{{}})"
+        if isinstance(node, DeleteExpression): return f"// drop({node.target})"
+        if isinstance(node, BroadcastExpression): return f"/* broadcast */"
+        if isinstance(node, VectorizeExpression): return f"/* vectorize */"
+        if isinstance(node, FormulaExpression): return f"/* formula */"
+        if isinstance(node, KeyOfExpression): return f"/* keyof {node.target_type} */"
+        if isinstance(node, TemplateLiteral): return f"/* template literal */"
+        if isinstance(node, YieldToBlock): return f"/* yield to block */"
         return "None"
 
     def _gen_if(self, node):
@@ -299,6 +340,56 @@ class RustGenerator:
             else:
                 lines.append(self._gen_statement(stmt))
         return "\n".join(lines)
+
+
+    # ---- v0.9.1+ Handler Methods ----
+
+    def _gen_set_stmt(self, node):
+        el = ", ".join(str(e) for e in node.elements)
+        return self._indent() + f"let _set = vec![{el}].into_iter().collect::<std::collections::HashSet<_>>();"
+
+    def _gen_tuple_stmt(self, node):
+        el = ", ".join(str(e) for e in node.elements)
+        return self._indent() + f"let _tuple = ({el});"
+
+    def _gen_multi_return(self, node):
+        vals = ", ".join(self._gen_expression(v) for v in node.values)
+        return self._indent() + f"return ({vals});"
+
+    def _gen_synchronized(self, node):
+        lock = node.lock_object or "_mutex"
+        lines = [self._indent() + f"let __lock = {lock}.lock().unwrap();",
+                 self._indent() + "// synchronized block"]
+        self.indent_level += 1
+        for s in node.body: lines.append(self._gen_statement(s))
+        self.indent_level -= 1
+        return "\n".join(lines)
+
+    def _gen_module_def(self, node):
+        lines = [self._indent() + f"mod {node.name} {{"]
+        self.indent_level += 1
+        for s in node.body: lines.append(self._gen_statement(s))
+        self.indent_level -= 1
+        lines.append(self._indent() + "}")
+        return "\n".join(lines)
+
+    def _gen_sealed_class(self, node):
+        lines = [self._indent() + f"// sealed class {node.name} (Rust: use sealed trait pattern)"]
+        lines.append(self._indent() + f"trait {node.name} {{}}")
+        for sub in node.subclasses:
+            lines.append(self._indent() + f"// impl {node.name} for {sub} {{}}")
+        return "\n".join(lines)
+
+    def _gen_new_stmt(self, node):
+        args = ", ".join(self._gen_expression(a) for a in node.arguments)
+        return self._indent() + f"let __ptr = Box::new({node.type_name}{{{args}}});" if args else self._indent() + f"let __ptr = Box::new({node.type_name}{{}});"
+
+    def _gen_delete_stmt(self, node):
+        return self._indent() + f"drop({node.target});  // explicit drop"
+
+    def _gen_atomic(self, node):
+        val = self._gen_expression(node.initial_value) if node.initial_value else "0"
+        return self._indent() + f"let {node.name} = std::sync::atomic::AtomicI32::new({val});"
 
 
 def generate_rust(ast: Program) -> str:

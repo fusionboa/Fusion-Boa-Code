@@ -63,6 +63,28 @@ class RGenerator:
             RecordDefinition: self._gen_record_definition,
             PropertyDefinition: self._gen_property_definition,
             ExtensionDefinition: self._gen_extension_definition,
+            # v0.9.1+ Universal Polyglot
+            SetLiteral: self._gen_set_stmt,
+            TupleLiteral: lambda n: self._indent() + f"list({', '.join(str(e) for e in n.elements)})" if n.elements else self._indent() + "list()",
+            MultiReturnStatement: self._gen_multi_return,
+            YieldFromStatement: lambda n: self._indent() + f"# yield from: {self._gen_expression(n.iterable)}",
+            GoStatement: lambda n: self._indent() + f"# goroutine: {n.name or 'anonymous'} (use future::future)",
+            ChannelDeclaration: lambda n: self._indent() + f"# channel: {n.name}",
+            ChannelSelect: lambda n: self._indent() + f"# select {len(n.cases)} channels",
+            ChannelClose: lambda n: self._indent() + f"# channel close",
+            SynchronizedBlock: lambda n: self._indent() + f"# synchronized",
+            AsyncWithStatement: lambda n: self._indent() + f"# async with",
+            ModuleDefinition: lambda n: self._indent() + f"# module {n.name}",
+            MixinStatement: lambda n: self._indent() + f"# {n.mixin_type} {n.mixin_name}",
+            ObjectDefinition: lambda n: self._indent() + f"# object {n.name} (singleton)",
+            ActorDefinition: lambda n: self._indent() + f"# actor {n.name}",
+            SealedClassDefinition: lambda n: self._indent() + f"# sealed class {n.name}",
+            NewExpression: lambda n: self._indent() + f"# new {n.type_name}",
+            DeleteExpression: lambda n: self._indent() + f"# delete {n.target} (GC handles)",
+            GlobalStatement: lambda n: self._indent() + f"# global {', '.join(n.names)}",
+            AtomicCounter: lambda n: self._indent() + f"{n.name} <- 0L  # atomic",
+            FormulaExpression: self._gen_formula_stmt,
+            VectorizeExpression: self._gen_vectorize_stmt,
         }
         gen_func = gen_map.get(type(node))
         if gen_func: return gen_func(node)
@@ -97,6 +119,31 @@ class RGenerator:
         if isinstance(node, GeneratorExpression): return f"# generator: {node.variable}"
         if isinstance(node, IncrementExpression): return f"{node.target} <- {node.target} + 1"
         if isinstance(node, DecrementExpression): return f"{node.target} <- {node.target} - 1"
+        # v0.9.1+ Expression nodes
+        if isinstance(node, SetLiteral):
+            el = ", ".join(self._gen_expression(e) for e in node.elements)
+            return f"unique(c({el}))"
+        if isinstance(node, TupleLiteral):
+            el = ", ".join(self._gen_expression(e) for e in node.elements)
+            return f"list({el})"
+        if isinstance(node, SymbolLiteral): return f"/* :{node.name} */"
+        if isinstance(node, BlockExpression): return f"/* block */"
+        if isinstance(node, JsxElement): return f"/* JSX:{node.tag} */"
+        if isinstance(node, HookCall): return f"/* {node.hook_name}() */"
+        if isinstance(node, NewExpression): return f"/* new */"
+        if isinstance(node, DeleteExpression): return f"/* delete {node.target} */"
+        if isinstance(node, BroadcastExpression): return f"/* broadcast */"
+        if isinstance(node, VectorizeExpression):
+            op = self._gen_expression(node.operation)
+            col = self._gen_expression(node.collection) if node.collection else ""
+            return f"Vectorize({op})({col})" if col else f"Vectorize({op})"
+        if isinstance(node, FormulaExpression):
+            resp = self._gen_expression(node.response)
+            preds = " + ".join(self._gen_expression(p) for p in node.predictors)
+            return f"{resp} ~ {preds}"
+        if isinstance(node, KeyOfExpression): return f"/* keyof {node.target_type} */"
+        if isinstance(node, TemplateLiteral): return f"/* template literal */"
+        if isinstance(node, YieldToBlock): return f"/* yield to block */"
         return f"# Unknown: {type(node).__name__}"
 
     def _gen_literal(self, node: Literal) -> str:
@@ -433,6 +480,27 @@ class RGenerator:
                 self.indent_level -= 1
                 lines.append(self._indent() + "}")
         return "\n".join(lines)
+
+
+    # ---- v0.9.1+ Handler Methods ----
+
+    def _gen_set_stmt(self, node):
+        el = ", ".join(str(e) for e in node.elements)
+        return self._indent() + f"unique(c({el}))  # set"
+
+    def _gen_multi_return(self, node):
+        vals = ", ".join(self._gen_expression(v) for v in node.values)
+        return self._indent() + f"return(list({vals}))"
+
+    def _gen_formula_stmt(self, node):
+        resp = self._gen_expression(node.response)
+        preds = " + ".join(self._gen_expression(p) for p in node.predictors)
+        return self._indent() + f"{resp} ~ {preds}"
+
+    def _gen_vectorize_stmt(self, node):
+        op = self._gen_expression(node.operation)
+        col = self._gen_expression(node.collection) if node.collection else ""
+        return self._indent() + f"Vectorize({op})({col})" if col else self._indent() + f"Vectorize({op})"
 
 
 def generate_r(ast: Program) -> str:

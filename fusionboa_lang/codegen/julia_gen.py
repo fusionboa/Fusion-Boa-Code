@@ -63,6 +63,28 @@ class JuliaGenerator:
             RecordDefinition: self._gen_record_definition,
             PropertyDefinition: self._gen_property_definition,
             ExtensionDefinition: self._gen_extension_definition,
+            # v0.9.1+ Universal Polyglot
+            SetLiteral: self._gen_set_stmt,
+            TupleLiteral: lambda n: self._indent() + f"({', '.join(str(e) for e in n.elements)})" if n.elements else self._indent() + "()",
+            MultiReturnStatement: self._gen_multi_return,
+            YieldFromStatement: lambda n: self._indent() + f"# yield from: {self._gen_expression(n.iterable)}",
+            GoStatement: self._gen_go_stmt,
+            ChannelDeclaration: lambda n: self._indent() + f"# channel: {n.name} (use Channel{T})",
+            ChannelSelect: lambda n: self._indent() + f"# select {len(n.cases)} channels",
+            ChannelClose: lambda n: self._indent() + f"# channel close",
+            SynchronizedBlock: lambda n: self._indent() + f"# synchronized (use ReentrantLock)",
+            AsyncWithStatement: lambda n: self._indent() + f"# async with",
+            ModuleDefinition: self._gen_module_def,
+            MixinStatement: lambda n: self._indent() + f"# {n.mixin_type} {n.mixin_name}",
+            ObjectDefinition: lambda n: self._indent() + f"# object {n.name} (singleton)",
+            ActorDefinition: lambda n: self._indent() + f"# actor {n.name}",
+            SealedClassDefinition: lambda n: self._indent() + f"# sealed class {n.name}",
+            NewExpression: lambda n: self._indent() + f"{n.type_name}({', '.join(self._gen_expression(a) for a in n.arguments)})",
+            DeleteExpression: lambda n: self._indent() + f"# delete {n.target} (GC handles)",
+            GlobalStatement: lambda n: self._indent() + f"# global {', '.join(n.names)}",
+            AtomicCounter: lambda n: self._indent() + f"const {n.name} = Threads.Atomic{{Int}}({self._gen_expression(n.initial_value) if n.initial_value else '0'})",
+            MacroDefinition: self._gen_macro,
+            BroadcastExpression: self._gen_broadcast_stmt,
         }
         gen_func = gen_map.get(type(node))
         if gen_func: return gen_func(node)
@@ -97,6 +119,30 @@ class JuliaGenerator:
         if isinstance(node, GeneratorExpression): return f"# generator: {node.variable}"
         if isinstance(node, IncrementExpression): return f"{node.target} += 1"
         if isinstance(node, DecrementExpression): return f"{node.target} -= 1"
+        # v0.9.1+ Expression nodes
+        if isinstance(node, SetLiteral):
+            el = ", ".join(self._gen_expression(e) for e in node.elements)
+            return f"Set([{el}])"
+        if isinstance(node, TupleLiteral):
+            el = ", ".join(self._gen_expression(e) for e in node.elements)
+            return f"({el})"
+        if isinstance(node, SymbolLiteral): return f":{node.name}"
+        if isinstance(node, BlockExpression): return f"/* block */"
+        if isinstance(node, JsxElement): return f"/* JSX:{node.tag} */"
+        if isinstance(node, HookCall): return f"/* {node.hook_name}() */"
+        if isinstance(node, NewExpression):
+            args = ", ".join(self._gen_expression(a) for a in node.arguments)
+            return f"{node.type_name}({args})"
+        if isinstance(node, DeleteExpression): return f"# delete {node.target}"
+        if isinstance(node, BroadcastExpression):
+            op = self._gen_expression(node.operation)
+            col = self._gen_expression(node.collection) if node.collection else ""
+            return f"{op}.({col})" if col else f"{op}."
+        if isinstance(node, VectorizeExpression): return f"/* vectorize */"
+        if isinstance(node, FormulaExpression): return f"/* formula */"
+        if isinstance(node, KeyOfExpression): return f"/* keyof {node.target_type} */"
+        if isinstance(node, TemplateLiteral): return f"/* template literal */"
+        if isinstance(node, YieldToBlock): return f"/* yield to block */"
         return f"# Unknown: {type(node).__name__}"
 
     def _gen_literal(self, node: Literal) -> str:
@@ -456,6 +502,49 @@ class JuliaGenerator:
                 self.indent_level -= 1
                 lines.append(self._indent() + "end")
         return "\n".join(lines)
+
+
+    # ---- v0.9.1+ Handler Methods ----
+
+    def _gen_set_stmt(self, node):
+        el = ", ".join(str(e) for e in node.elements)
+        return self._indent() + f"Set([{el}])"
+
+    def _gen_multi_return(self, node):
+        vals = ", ".join(self._gen_expression(v) for v in node.values)
+        return self._indent() + f"return ({vals})"
+
+    def _gen_go_stmt(self, node):
+        name = node.name or "anonymous"
+        lines = [self._indent() + f"# goroutine: {name}"]
+        lines.append(self._indent() + f"@async begin")
+        self.indent_level += 1
+        for s in node.body: lines.append(self._gen_statement(s))
+        self.indent_level -= 1
+        lines.append(self._indent() + "end")
+        return "\n".join(lines)
+
+    def _gen_module_def(self, node):
+        lines = [self._indent() + f"module {node.name}"]
+        self.indent_level += 1
+        for s in node.body: lines.append(self._gen_statement(s))
+        self.indent_level -= 1
+        lines.append(self._indent() + "end")
+        return "\n".join(lines)
+
+    def _gen_macro(self, node):
+        params = ", ".join(node.parameters)
+        lines = [self._indent() + f"macro {node.name}({params})"]
+        self.indent_level += 1
+        for s in node.body: lines.append(self._gen_statement(s))
+        self.indent_level -= 1
+        lines.append(self._indent() + "end")
+        return "\n".join(lines)
+
+    def _gen_broadcast_stmt(self, node):
+        op = self._gen_expression(node.operation)
+        col = self._gen_expression(node.collection) if node.collection else ""
+        return self._indent() + f"{op}.({col})"
 
 
 def generate_julia(ast: Program) -> str:

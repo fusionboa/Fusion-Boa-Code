@@ -77,6 +77,28 @@ class JavaGenerator:
             RecordDefinition: self._gen_record_definition,
             PropertyDefinition: self._gen_property_definition,
             ExtensionDefinition: self._gen_extension_definition,
+            # v0.9.1+ Universal Polyglot
+            SetLiteral: self._gen_set_stmt,
+            TupleLiteral: self._gen_tuple_stmt,
+            MultiReturnStatement: self._gen_multi_return,
+            YieldFromStatement: lambda n: f"// yield from: {self._gen_expression(n.iterable)}",
+            GoStatement: lambda n: f"// goroutine: {n.name or 'anonymous'}",
+            ChannelDeclaration: lambda n: f"// channel: {n.name}",
+            ChannelSelect: lambda n: f"// select {len(n.cases)} channels",
+            ChannelClose: lambda n: f"// channel close",
+            SynchronizedBlock: self._gen_synchronized,
+            AsyncWithStatement: lambda n: f"// async with",
+            ModuleDefinition: lambda n: f"// module {n.name}",
+            MixinStatement: lambda n: f"// {n.mixin_type} {n.mixin_name}",
+            ObjectDefinition: self._gen_object_def,
+            ActorDefinition: lambda n: f"// actor {n.name}",
+            SealedClassDefinition: self._gen_sealed_class,
+            NewExpression: self._gen_new_stmt,
+            DeleteExpression: lambda n: f"// delete {n.target} (GC handles this)",
+            GlobalStatement: lambda n: f"// global {', '.join(n.names)}",
+            AtomicCounter: lambda n: f"java.util.concurrent.atomic.AtomicInteger {n.name} = new java.util.concurrent.atomic.AtomicInteger({self._gen_expression(n.initial_value)});" if n.initial_value else f"java.util.concurrent.atomic.AtomicInteger {n.name} = new java.util.concurrent.atomic.AtomicInteger(0);",
+            PackageDeclaration: self._gen_package,
+            AnnotationDefinition: self._gen_annotation,
         }
         gen_func = gen_map.get(type(node))
         if gen_func: return gen_func(node)
@@ -111,6 +133,27 @@ class JavaGenerator:
         if isinstance(node, GeneratorExpression): return f"/* generator */"
         if isinstance(node, IncrementExpression): return f"++{node.target}" if node.prefix else f"{node.target}++"
         if isinstance(node, DecrementExpression): return f"--{node.target}" if node.prefix else f"{node.target}--"
+        # v0.9.1+ Expression nodes
+        if isinstance(node, SetLiteral):
+            el = ", ".join(self._gen_expression(e) for e in node.elements)
+            return f"new java.util.HashSet<>(java.util.Arrays.asList({el}))"
+        if isinstance(node, TupleLiteral):
+            el = ", ".join(self._gen_expression(e) for e in node.elements)
+            return f"new Object[]{{{el}}}"
+        if isinstance(node, SymbolLiteral): return f"/* :{node.name} */"
+        if isinstance(node, BlockExpression): return f"/* block */"
+        if isinstance(node, JsxElement): return f"/* JSX:{node.tag} */"
+        if isinstance(node, HookCall): return f"/* {node.hook_name}() */"
+        if isinstance(node, NewExpression):
+            args = ", ".join(self._gen_expression(a) for a in node.arguments)
+            return f"new {node.type_name}({args})"
+        if isinstance(node, DeleteExpression): return f"/* delete {node.target} */"
+        if isinstance(node, BroadcastExpression): return f"/* broadcast */"
+        if isinstance(node, VectorizeExpression): return f"/* vectorize */"
+        if isinstance(node, FormulaExpression): return f"/* formula */"
+        if isinstance(node, KeyOfExpression): return f"/* keyof {node.target_type} */"
+        if isinstance(node, TemplateLiteral): return f"/* template literal */"
+        if isinstance(node, YieldToBlock): return f"/* yield to block */"
         return f"/* Unknown: {type(node).__name__} */"
 
     def _gen_literal(self, node: Literal) -> str:
@@ -429,6 +472,57 @@ class JavaGenerator:
                 lines.append("    }")
         lines.append("}")
         return "\n".join(lines)
+
+
+    # ---- v0.9.1+ Handler Methods ----
+
+    def _gen_set_stmt(self, node):
+        el = ", ".join(str(e) for e in node.elements)
+        return f"new java.util.HashSet<>(java.util.Arrays.asList({el}));  // set"
+
+    def _gen_tuple_stmt(self, node):
+        el = ", ".join(str(e) for e in node.elements)
+        return f"new Object[]{{{el}}};  // tuple"
+
+    def _gen_multi_return(self, node):
+        vals = ", ".join(self._gen_expression(v) for v in node.values)
+        return f"return new Object[]{{{vals}}};"
+
+    def _gen_synchronized(self, node):
+        lock = node.lock_object or "this"
+        lines = [f"synchronized ({lock}) {{"]
+        for s in node.body: lines.append(f"    {self._gen_statement(s)}")
+        lines.append("}")
+        return "\n".join(lines)
+
+    def _gen_object_def(self, node):
+        lines = [f"// Kotlin-style object (singleton) translated to Java:"]
+        lines.append(f"class {node.name} {{")
+        lines.append(f"    private static {node.name} INSTANCE = new {node.name}();")
+        lines.append(f"    public static {node.name} getInstance() {{ return INSTANCE; }}")
+        lines.append(f"    private {node.name}() {{}}")
+        for s in node.body: lines.append(f"    {self._gen_statement(s)}")
+        lines.append("}")
+        return "\n".join(lines)
+
+    def _gen_sealed_class(self, node):
+        lines = [f"sealed class {node.name} permits {', '.join(node.subclasses)}" if node.subclasses else f"sealed class {node.name}"]
+        lines.append("{")
+        for s in node.body:
+            lines.append(f"    {self._gen_statement(s)}")
+        lines.append("}")
+        return "\n".join(lines)
+
+    def _gen_new_stmt(self, node):
+        args = ", ".join(self._gen_expression(a) for a in node.arguments)
+        return f"new {node.type_name}({args});"
+
+    def _gen_package(self, node):
+        return f"package {node.package_path};"
+
+    def _gen_annotation(self, node):
+        args_str = ", ".join(f"{k} = {v}" for k, v in node.arguments.items())
+        return f"@{node.name}({args_str})" if args_str else f"@{node.name}"
 
 
 def generate_java(ast: Program) -> str:

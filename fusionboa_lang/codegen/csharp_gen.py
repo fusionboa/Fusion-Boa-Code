@@ -71,6 +71,27 @@ class CSharpGenerator:
             RecordDefinition: self._gen_record_definition,
             PropertyDefinition: self._gen_property_definition,
             ExtensionDefinition: self._gen_extension_definition,
+            # v0.9.1+ Universal Polyglot
+            SetLiteral: self._gen_set_stmt,
+            TupleLiteral: self._gen_tuple_stmt,
+            MultiReturnStatement: self._gen_multi_return,
+            YieldFromStatement: lambda n: f"// yield from: {self._gen_expression(n.iterable)}",
+            GoStatement: lambda n: f"// goroutine: {n.name or 'anonymous'} (use Task.Run)",
+            ChannelDeclaration: lambda n: f"// channel: {n.name}",
+            ChannelSelect: lambda n: f"// select {len(n.cases)} channels",
+            ChannelClose: lambda n: f"// channel close",
+            SynchronizedBlock: self._gen_synchronized,
+            AsyncWithStatement: self._gen_async_with,
+            ModuleDefinition: lambda n: f"// module {n.name}",
+            MixinStatement: lambda n: f"// {n.mixin_type} {n.mixin_name}",
+            ObjectDefinition: lambda n: f"// object {n.name} (singleton)",
+            ActorDefinition: lambda n: f"// actor {n.name}",
+            SealedClassDefinition: self._gen_sealed_class,
+            NewExpression: lambda n: f"new {n.type_name}({', '.join(self._gen_expression(a) for a in n.arguments)});" if n.arguments else f"new {n.type_name}();",
+            DeleteExpression: lambda n: f"// delete {n.target} (GC handles this)",
+            GlobalStatement: lambda n: f"// global {', '.join(n.names)}",
+            AtomicCounter: lambda n: f"int {n.name} = {self._gen_expression(n.initial_value) if n.initial_value else '0'};  // atomic",
+            PackageDeclaration: lambda n: f"// package {n.package_path}",
         }
         gen_func = gen_map.get(type(node))
         if gen_func: return gen_func(node)
@@ -105,6 +126,27 @@ class CSharpGenerator:
         if isinstance(node, GeneratorExpression): return f"/* generator */"
         if isinstance(node, IncrementExpression): return f"++{node.target}" if node.prefix else f"{node.target}++"
         if isinstance(node, DecrementExpression): return f"--{node.target}" if node.prefix else f"{node.target}--"
+        # v0.9.1+ Expression nodes
+        if isinstance(node, SetLiteral):
+            el = ", ".join(self._gen_expression(e) for e in node.elements)
+            return f"new HashSet<object> {{ {el} }}"
+        if isinstance(node, TupleLiteral):
+            el = ", ".join(self._gen_expression(e) for e in node.elements)
+            return f"({el})"
+        if isinstance(node, SymbolLiteral): return f"/* :{node.name} */"
+        if isinstance(node, BlockExpression): return f"/* block */"
+        if isinstance(node, JsxElement): return f"/* JSX:{node.tag} */"
+        if isinstance(node, HookCall): return f"/* {node.hook_name}() */"
+        if isinstance(node, NewExpression):
+            args = ", ".join(self._gen_expression(a) for a in node.arguments)
+            return f"new {node.type_name}({args})"
+        if isinstance(node, DeleteExpression): return f"/* delete {node.target} */"
+        if isinstance(node, BroadcastExpression): return f"/* broadcast */"
+        if isinstance(node, VectorizeExpression): return f"/* vectorize */"
+        if isinstance(node, FormulaExpression): return f"/* formula */"
+        if isinstance(node, KeyOfExpression): return f"/* keyof {node.target_type} */"
+        if isinstance(node, TemplateLiteral): return f"/* template literal */"
+        if isinstance(node, YieldToBlock): return f"/* yield to block */"
         return f"/* Unknown: {type(node).__name__} */"
 
     def _gen_literal(self, node: Literal) -> str:
@@ -400,6 +442,43 @@ class CSharpGenerator:
                 for s in stmt.body:
                     lines.append(f"        {self._gen_statement(s)}")
                 lines.append("    }")
+        lines.append("}")
+        return "\n".join(lines)
+
+
+    # ---- v0.9.1+ Handler Methods ----
+
+    def _gen_set_stmt(self, node):
+        el = ", ".join(self._gen_expression(e) for e in node.elements)
+        return f"new HashSet<object> {{ {el} }};  // set"
+
+    def _gen_tuple_stmt(self, node):
+        el = ", ".join(self._gen_expression(e) for e in node.elements)
+        return f"({el});  // tuple"
+
+    def _gen_multi_return(self, node):
+        vals = ", ".join(self._gen_expression(v) for v in node.values)
+        return f"return ({vals});"
+
+    def _gen_synchronized(self, node):
+        lock = node.lock_object or "_lock"
+        lines = [f"lock ({lock}) {{"]
+        for s in node.body: lines.append(f"    {self._gen_statement(s)}")
+        lines.append("}")
+        return "\n".join(lines)
+
+    def _gen_async_with(self, node):
+        r = self._gen_expression(node.resource)
+        lines = [f"await using (var _res = {r})  // async with"]
+        lines.append("{")
+        for s in node.body: lines.append(f"    {self._gen_statement(s)}")
+        lines.append("}")
+        return "\n".join(lines)
+
+    def _gen_sealed_class(self, node):
+        lines = [f"sealed class {node.name} {{"]
+        for s in node.body:
+            lines.append(f"    {self._gen_statement(s)}")
         lines.append("}")
         return "\n".join(lines)
 

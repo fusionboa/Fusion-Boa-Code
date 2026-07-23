@@ -63,6 +63,26 @@ class LuaGenerator:
             RecordDefinition: self._gen_record_definition,
             PropertyDefinition: self._gen_property_definition,
             ExtensionDefinition: self._gen_extension_definition,
+            # v0.9.1+ Universal Polyglot
+            SetLiteral: self._gen_set_stmt,
+            TupleLiteral: self._gen_tuple_stmt,
+            MultiReturnStatement: self._gen_multi_return,
+            YieldFromStatement: lambda n: f"-- yield from: {self._gen_expression(n.iterable)}",
+            GoStatement: lambda n: f"-- goroutine: {n.name or 'anonymous'} (use coroutine.create)",
+            ChannelDeclaration: lambda n: f"-- channel: {n.name}",
+            ChannelSelect: lambda n: f"-- select {len(n.cases)} channels",
+            ChannelClose: lambda n: f"-- channel close",
+            SynchronizedBlock: lambda n: self._indent() + f"-- synchronized",
+            AsyncWithStatement: lambda n: self._indent() + f"-- async with",
+            ModuleDefinition: self._gen_module_def,
+            MixinStatement: self._gen_mixin,
+            ObjectDefinition: lambda n: self._indent() + f"-- object {n.name} (singleton)",
+            ActorDefinition: lambda n: self._indent() + f"-- actor {n.name}",
+            SealedClassDefinition: lambda n: self._indent() + f"-- sealed class {n.name}",
+            NewExpression: lambda n: self._indent() + f"-- new {n.type_name}",
+            DeleteExpression: lambda n: self._indent() + f"-- delete {n.target}",
+            GlobalStatement: lambda n: self._indent() + f"-- global {', '.join(n.names)}",
+            AtomicCounter: lambda n: self._indent() + f"{n.name} = {{ __value = {self._gen_expression(n.initial_value) if n.initial_value else '0'} }}  -- atomic",
         }
         gen_func = gen_map.get(type(node))
         if gen_func: return gen_func(node)
@@ -97,6 +117,25 @@ class LuaGenerator:
         if isinstance(node, GeneratorExpression): return f"-- generator: {node.variable}"
         if isinstance(node, IncrementExpression): return f"{node.target} = {node.target} + 1"
         if isinstance(node, DecrementExpression): return f"{node.target} = {node.target} - 1"
+        # v0.9.1+ Expression nodes
+        if isinstance(node, SetLiteral):
+            el = ", ".join(f"[{self._gen_expression(e)}] = true" for e in node.elements)
+            return "{" + el + "}"
+        if isinstance(node, TupleLiteral):
+            el = ", ".join(self._gen_expression(e) for e in node.elements)
+            return "{" + el + "}"
+        if isinstance(node, SymbolLiteral): return f"/* :{node.name} */"
+        if isinstance(node, BlockExpression): return f"/* block */"
+        if isinstance(node, JsxElement): return f"/* JSX:{node.tag} */"
+        if isinstance(node, HookCall): return f"/* {node.hook_name}() */"
+        if isinstance(node, NewExpression): return f"/* new */"
+        if isinstance(node, DeleteExpression): return f"/* delete {node.target} */"
+        if isinstance(node, BroadcastExpression): return f"/* broadcast */"
+        if isinstance(node, VectorizeExpression): return f"/* vectorize */"
+        if isinstance(node, FormulaExpression): return f"/* formula */"
+        if isinstance(node, KeyOfExpression): return f"/* keyof {node.target_type} */"
+        if isinstance(node, TemplateLiteral): return f"/* template literal */"
+        if isinstance(node, YieldToBlock): return f"/* yield to block */"
         return f"-- Unknown: {type(node).__name__}"
 
     def _gen_literal(self, node: Literal) -> str:
@@ -450,6 +489,30 @@ class LuaGenerator:
             else:
                 lines.append(self._gen_statement(stmt))
         return "\n".join(lines)
+
+
+    # ---- v0.9.1+ Handler Methods ----
+
+    def _gen_set_stmt(self, node):
+        el = ", ".join(f"[{str(e)}] = true" for e in node.elements)
+        return self._indent() + "{" + el + "}  -- set"
+
+    def _gen_tuple_stmt(self, node):
+        el = ", ".join(str(e) for e in node.elements)
+        return self._indent() + "{" + el + "}  -- tuple"
+
+    def _gen_multi_return(self, node):
+        vals = ", ".join(self._gen_expression(v) for v in node.values)
+        return self._indent() + f"return {vals}"
+
+    def _gen_module_def(self, node):
+        lines = [self._indent() + f"-- Module: {node.name}"]
+        lines.append(self._indent() + f"{node.name} = {{}}")
+        for s in node.body: lines.append(self._gen_statement(s))
+        return "\n".join(lines)
+
+    def _gen_mixin(self, node):
+        return self._indent() + f"-- {node.mixin_type} {node.mixin_name} (Lua: use metatable mixin pattern)"
 
 
 def generate_lua(ast: Program) -> str:

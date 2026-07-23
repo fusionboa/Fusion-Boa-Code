@@ -65,6 +65,27 @@ class KotlinGenerator:
             RecordDefinition: self._gen_record_definition,
             PropertyDefinition: self._gen_property_definition,
             ExtensionDefinition: self._gen_extension_definition,
+            # v0.9.1+ Universal Polyglot
+            SetLiteral: self._gen_set_stmt,
+            TupleLiteral: self._gen_tuple_stmt,
+            MultiReturnStatement: self._gen_multi_return,
+            YieldFromStatement: lambda n: self._indent() + f"// yield from: {self._gen_expression(n.iterable)}",
+            GoStatement: self._gen_go_stmt,
+            ChannelDeclaration: lambda n: self._indent() + f"// channel: {n.name} (use Channel<T>)",
+            ChannelSelect: lambda n: self._indent() + f"// select {len(n.cases)} channels",
+            ChannelClose: lambda n: self._indent() + f"// channel close",
+            SynchronizedBlock: self._gen_synchronized,
+            AsyncWithStatement: lambda n: self._indent() + f"// async with",
+            ModuleDefinition: lambda n: self._indent() + f"// module {n.name}",
+            MixinStatement: lambda n: self._indent() + f"// {n.mixin_type} {n.mixin_name}",
+            ObjectDefinition: self._gen_object_def,
+            ActorDefinition: lambda n: self._indent() + f"// actor {n.name}",
+            SealedClassDefinition: self._gen_sealed_class,
+            NewExpression: lambda n: self._indent() + f"{n.type_name}({', '.join(self._gen_expression(a) for a in n.arguments)})",
+            DeleteExpression: lambda n: self._indent() + f"// delete {n.target} (GC handles)",
+            GlobalStatement: lambda n: self._indent() + f"// global {', '.join(n.names)}",
+            AtomicCounter: lambda n: self._indent() + f"val {n.name} = java.util.concurrent.atomic.AtomicInteger({self._gen_expression(n.initial_value) if n.initial_value else '0'})",
+            LateInitDeclaration: self._gen_lateinit,
         }
         gen_func = gen_map.get(type(node))
         if gen_func: return gen_func(node)
@@ -99,6 +120,27 @@ class KotlinGenerator:
         if isinstance(node, GeneratorExpression): return f"/* generator */"
         if isinstance(node, IncrementExpression): return f"++{node.target}" if node.prefix else f"{node.target}++"
         if isinstance(node, DecrementExpression): return f"--{node.target}" if node.prefix else f"{node.target}--"
+        # v0.9.1+ Expression nodes
+        if isinstance(node, SetLiteral):
+            el = ", ".join(self._gen_expression(e) for e in node.elements)
+            return f"setOf({el})"
+        if isinstance(node, TupleLiteral):
+            el = ", ".join(self._gen_expression(e) for e in node.elements)
+            return f"Pair({el})" if len(node.elements) == 2 else f"Triple({el})" if len(node.elements) == 3 else f"tupleOf({el})"
+        if isinstance(node, SymbolLiteral): return f"/* :{node.name} */"
+        if isinstance(node, BlockExpression): return f"/* block */"
+        if isinstance(node, JsxElement): return f"/* JSX:{node.tag} */"
+        if isinstance(node, HookCall): return f"/* {node.hook_name}() */"
+        if isinstance(node, NewExpression):
+            args = ", ".join(self._gen_expression(a) for a in node.arguments)
+            return f"{node.type_name}({args})"
+        if isinstance(node, DeleteExpression): return f"/* delete {node.target} */"
+        if isinstance(node, BroadcastExpression): return f"/* broadcast */"
+        if isinstance(node, VectorizeExpression): return f"/* vectorize */"
+        if isinstance(node, FormulaExpression): return f"/* formula */"
+        if isinstance(node, KeyOfExpression): return f"/* keyof {node.target_type} */"
+        if isinstance(node, TemplateLiteral): return f"/* template literal */"
+        if isinstance(node, YieldToBlock): return f"/* yield to block */"
         return f"/* Unknown: {type(node).__name__} */"
 
     def _gen_literal(self, node: Literal) -> str:
@@ -413,6 +455,65 @@ class KotlinGenerator:
                     lines.append(f"    {self._gen_statement(s)}")
                 lines.append("}")
         return "\n".join(lines)
+
+
+    # ---- v0.9.1+ Handler Methods ----
+
+    def _gen_set_stmt(self, node):
+        el = ", ".join(str(e) for e in node.elements)
+        return self._indent() + f"setOf({el})"
+
+    def _gen_tuple_stmt(self, node):
+        el = ", ".join(str(e) for e in node.elements)
+        if len(node.elements) == 2: return self._indent() + f"Pair({el})"
+        if len(node.elements) == 3: return self._indent() + f"Triple({el})"
+        return self._indent() + f"tupleOf({el})"
+
+    def _gen_multi_return(self, node):
+        vals = ", ".join(self._gen_expression(v) for v in node.values)
+        if len(node.values) == 2: return f"return Pair({vals})"
+        if len(node.values) == 3: return f"return Triple({vals})"
+        return f"return arrayOf({vals})"
+
+    def _gen_go_stmt(self, node):
+        lines = [self._indent() + f"// goroutine: {node.name or 'anonymous'}"]
+        lines.append(self._indent() + "thread {")
+        self.indent_level += 1
+        for s in node.body: lines.append(self._gen_statement(s))
+        self.indent_level -= 1
+        lines.append(self._indent() + "}")
+        return "\n".join(lines)
+
+    def _gen_synchronized(self, node):
+        lock = node.lock_object or "_lock"
+        lines = [self._indent() + f"synchronized({lock}) {{"]
+        self.indent_level += 1
+        for s in node.body: lines.append(self._gen_statement(s))
+        self.indent_level -= 1
+        lines.append(self._indent() + "}")
+        return "\n".join(lines)
+
+    def _gen_object_def(self, node):
+        prefix = "companion " if node.is_companion else ""
+        lines = [self._indent() + f"{prefix}object {node.name} {{"]
+        self.indent_level += 1
+        for s in node.body: lines.append(self._gen_statement(s))
+        self.indent_level -= 1
+        lines.append(self._indent() + "}")
+        return "\n".join(lines)
+
+    def _gen_sealed_class(self, node):
+        lines = [self._indent() + f"sealed class {node.name} {{"]
+        self.indent_level += 1
+        for s in node.body: lines.append(self._gen_statement(s))
+        for sub in node.subclasses:
+            lines.append(self._indent() + f"class {sub} : {node.name}()")
+        self.indent_level -= 1
+        lines.append(self._indent() + "}")
+        return "\n".join(lines)
+
+    def _gen_lateinit(self, node):
+        return self._indent() + f"lateinit var {node.name}: {node.var_type}"
 
 
 def generate_kotlin(ast: Program) -> str:
