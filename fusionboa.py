@@ -68,7 +68,7 @@ from fusionboa_lang.codegen.target_router import (
 from fusionboa_lang.runtime.executor import execute
 
 
-VERSION = "0.9.7"
+VERSION = "1.0.0"
 
 DEBUG = False  # Set by --debug flag
 
