@@ -16,10 +16,10 @@
     <img src="https://img.shields.io/badge/targets-23-blue" alt="Targets">
   </a>
   <a href="https://github.com/fusionboa/Fusion-Boa-Code">
-    <img src="https://img.shields.io/badge/keywords-725-orange" alt="Keywords">
+    <img src="https://img.shields.io/badge/keywords-902-orange" alt="Keywords">
   </a>
   <a href="https://github.com/fusionboa/Fusion-Boa-Code/releases">
-    <img src="https://img.shields.io/badge/version-v0.9.0-purple" alt="Version">
+    <img src="https://img.shields.io/badge/version-v0.9.2-purple" alt="Version">
   </a>
 </p>
 
@@ -62,7 +62,7 @@ in the event that x > 0: ...   supposing x > 0: ...
 for each item in list: ...       scanning through items: ...
 walk items: ...                  iterate over items: ...
 
-# v0.9.0 Advanced Systems:
+# v0.9.2 Advanced Systems:
 with lifetime 'a: ...                    # Rust borrow checker
 let addr be location of variable         # C++ pointer addressing
 execute assembly: "MOV RAX, 60"         # Inline assembly
@@ -94,7 +94,7 @@ git clone https://github.com/fusionboa/Fusion-Boa-Code.git
 cd Fusion-Boa-Code
 install.bat                    # Double-click or run — adds to PATH automatically
 :: Restart your terminal, then:
-fusionboa version              # → FusionBoa Language v0.9.0
+fusionboa version              # → FusionBoa Language v0.9.2
 ```
 
 ### macOS / Linux
@@ -104,7 +104,7 @@ cd Fusion-Boa-Code
 chmod +x install.sh && ./install.sh
 source ~/.zshrc                # (or ~/.bashrc)
 
-fusionboa version              # → FusionBoa Language v0.9.0
+fusionboa version              # → FusionBoa Language v0.9.2
 ```
 
 ### Create a project & run
@@ -313,7 +313,7 @@ body:
 // @target json
 {
     name: "fusionboa-app",
-    version: "0.9.0",
+    version: "0.9.2",
     targets: ["python", "javascript", "html", "css", "json", "go", "rust", "c++", "java", "c#", "ruby", "lua", "kotlin", "swift", "julia", "r"]
 }
 ```
@@ -371,12 +371,12 @@ fn main() { println!("Hello from Rust!"); }
 
 | Metric | Count |
 |--------|-------|
-| Keywords | **725** |
-| Token types | **228** |
-| Syntax aliases | **550+** |
+| Keywords | **902** |
+| Token types | **318** |
+| Syntax aliases | **902** |
 | Compile targets | **23** |
 | Tests passing | **207/207** |
-| Natural language patterns | 74+ features across 42 syntax sections |
+| Natural language patterns | 90+ features across 50+ syntax sections |
 
 ---
 
@@ -391,9 +391,9 @@ Fusion lang/
 ├── install.sh            # macOS/Linux installer
 ├── install.py            # Cross-platform installer
 ├── README.md             # This file
-├── COMPLETE_SYNTAX.md    # Full v0.9.0 syntax reference (42 sections, 74+ features)
+├── COMPLETE_SYNTAX.md    # Full v0.9.2 syntax reference (50+ sections, 90+ features)
 ├── fusionboa_lang/
-│   ├── lexer/            # Tokenizer (725 keywords)
+│   ├── lexer/            # Tokenizer (902 keywords, 318 token types)
 │   ├── parser/           # Parser (English-like AST)
 │   ├── codegen/          # 23 code generators
 │   └── runtime/          # Multi-language executor

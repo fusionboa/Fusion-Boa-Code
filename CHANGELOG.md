@@ -2,6 +2,28 @@
 
 All notable changes to FusionBoa will be documented in this file.
 
+## [v0.9.2] — 2026-07-23
+
+### Changed
+- Updated all metadata: 902 keywords, 318 token types, 90+ features
+- Updated README, pyproject.toml, setup.py with accurate counts and v0.9.2 version
+- Removed 15 clutter files from repository
+
+## [v0.9.1] — 2026-07-23
+
+### Added
+- **65+ new token types**: Go concurrency (goroutines, channels, select, fan-out/in), Rust ownership (borrow, lifetime, mutable borrow, unsafe), C++ pointers (reference, address-of, dereference, new/delete, virtual, abstract), Ruby (module, mixin, symbol, block), Kotlin (object, companion, sealed, data class, lateinit, suspend), Swift (actor, subscript, protocol), TypeScript (type alias, keyof, infer, conditional type), Julia (broadcast, macro), R (vectorize, formula), C# (delegate, event, partial class), Java (package, synchronized, volatile, annotation), plus sets, tuples, multi-return, yield-from, global, nonlocal, async-with, native/FFI
+- **45+ new AST nodes**: SetLiteral, TupleLiteral, GoStatement, ChannelDeclaration, ChannelSend, ChannelReceive, ChannelSelect, ChannelClose, OwnershipTransfer, BorrowExpression, LifetimeAnnotation, AddressOfExpression, DereferenceExpression, MultiReturnStatement, YieldFromStatement, GlobalStatement, NonlocalStatement, AsyncWithStatement, ModuleDefinition, MixinStatement, ObjectDefinition, SealedClassDefinition, ActorDefinition, TypeAliasDefinition, BroadcastExpression, MacroDefinition, VectorizeExpression, and more
+- **25+ new parser methods**: Full parsing for all new syntax with English-like multi-word keyword support
+- **250+ English-like keyword aliases**: goroutine → "spin up", "launch", "spawn", "fork"; channel → "typed pipe", "message queue"; send → "transmit", "pass through" etc.
+- Python codegen for all new AST nodes (sets with set(), goroutines with threading.Thread, channels with queue.Queue, ownership as doc comments)
+
+### Fixed
+- Removed duplicate `_parse_class_definition` (dead code from v0.5.0)
+- Removed dead `elif` in `_parse_channel_select` (IDENTIFIER check for "from" which is always FROM token)
+- Fixed keyword collisions: "set", "include", "go", "new", "free", "event", "symbol", "block", "object", "actor", "macro", "protocol" changed to multi-word forms to avoid clashing with variable names
+- Fixed duplicate NONLOCAL and DROP tokens
+
 ## [1.0.0-alpha] — 2026-07-21
 
 ### Added
