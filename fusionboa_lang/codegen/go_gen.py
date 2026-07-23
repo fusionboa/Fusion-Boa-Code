@@ -15,19 +15,24 @@ class GoGenerator:
         return "\t" * self.indent_level
 
     def generate(self) -> str:
-        lines = ['package main', '', 'import "fmt"', '', 'func main() {']
+        self._needs_time = False
+        imports = ['"fmt"']
+        lines = []
         self.indent_level = 1
         for s in self.ast.statements:
             if isinstance(s, (FunctionDefinition, ClassDefinition)):
                 continue
             lines.append(self._gen_statement(s))
         self.indent_level = 0
-        lines.append("}")
-        lines.append("")
+        body = 'func main() {\n' + '\n'.join(lines) + '\n}'
+        funcs = []
         for s in self.ast.statements:
             if isinstance(s, (FunctionDefinition, ClassDefinition)):
-                lines.append(self._gen_statement(s))
-        return "\n".join(lines)
+                funcs.append(self._gen_statement(s))
+        if self._needs_time:
+            imports.append('"time"')
+        header = 'package main\n\nimport (\n\t' + '\n\t'.join(imports) + '\n)\n'
+        return header + '\n' + body + '\n' + '\n'.join(funcs)
 
     def _gen_statement(self, node: ASTNode) -> str:
         if node is None: return ""
@@ -72,6 +77,25 @@ class GoGenerator:
         if isinstance(node, RecordDefinition): return self._gen_record_definition(node)
         if isinstance(node, PropertyDefinition): return self._gen_property_definition(node)
         if isinstance(node, ExtensionDefinition): return self._gen_extension_definition(node)
+        # v0.9.1 Universal Polyglot
+        if isinstance(node, MultiReturnStatement): return self._gen_multi_return(node)
+        if isinstance(node, YieldFromStatement): return self._gen_yield_from(node)
+        if isinstance(node, GlobalStatement): return self._gen_global(node)
+        if isinstance(node, NonlocalStatement): return self._gen_nonlocal(node)
+        if isinstance(node, AsyncWithStatement): return self._gen_async_with(node)
+        if isinstance(node, SynchronizedBlock): return self._gen_synchronized_block(node)
+        if isinstance(node, GoStatement): return self._gen_go_statement(node)
+        if isinstance(node, ChannelDeclaration): return self._gen_channel_declaration(node)
+        if isinstance(node, ChannelSend): return self._gen_channel_send(node)
+        if isinstance(node, ChannelReceive): return self._gen_channel_receive(node)
+        if isinstance(node, ChannelSelect): return self._gen_channel_select(node)
+        if isinstance(node, ChannelClose): return self._gen_channel_close(node)
+        if isinstance(node, NativeDeclaration): return self._gen_native_declaration(node)
+        if isinstance(node, ModuleDefinition): return self._gen_module_definition(node)
+        if isinstance(node, MixinStatement): return self._gen_mixin_statement(node)
+        if isinstance(node, ObjectDefinition): return self._gen_object_definition(node)
+        if isinstance(node, ActorDefinition): return self._gen_actor_definition(node)
+        if isinstance(node, SealedClassDefinition): return self._gen_sealed_class(node)
         return self._indent() + f"// {type(node).__name__}"
 
     def _gen_expression(self, node: ASTNode) -> str:
@@ -135,6 +159,12 @@ class GoGenerator:
         if isinstance(node, GeneratorExpression): return self._gen_generator(node)
         if isinstance(node, IncrementExpression): return f"{node.target}++"
         if isinstance(node, DecrementExpression): return f"{node.target}--"
+        if isinstance(node, SetLiteral):
+            elements = ", ".join(f"{self._gen_expression(e)}: struct{{}}{{}}" for e in node.elements)
+            return f"map[interface{{}}]struct{{}}{{{elements}}}"
+        if isinstance(node, TupleLiteral):
+            elements = ", ".join(self._gen_expression(e) for e in node.elements)
+            return f"[]interface{{}}{{{elements}}}"
         return f"nil"
 
     def _gen_if(self, node):
@@ -273,7 +303,6 @@ class GoGenerator:
 
     def _gen_extension_definition(self, node: ExtensionDefinition) -> str:
         """define extension on Type -> Go functions on types, with call-site rewriting"""
-        # Register extension methods for call-site rewriting
         if node.target_type not in self._extension_methods:
             self._extension_methods[node.target_type] = set()
         for stmt in node.body:
@@ -293,6 +322,106 @@ class GoGenerator:
             else:
                 lines.append(self._gen_statement(stmt))
         return "\n".join(lines)
+
+    # ---- v0.9.1 Universal Polyglot Codegen ----
+
+    def _gen_set_literal(self, node):
+        """{1, 2, 3} -> map[T]struct{} """
+        elements = ", ".join(f"{self._gen_expression(e)}: struct{{}}{{}}" for e in node.elements)
+        return f"map[interface{{}}]struct{{}}{{{elements}}}"
+
+    def _gen_tuple_literal(self, node):
+        """(1, 2, 3) -> []interface{}"""
+        elements = ", ".join(self._gen_expression(e) for e in node.elements)
+        return f"[]interface{{}}{{{elements}}}"
+
+    def _gen_multi_return(self, node):
+        """return a, b, c -> native Go multi-return"""
+        vals = ", ".join(self._gen_expression(v) for v in node.values)
+        return self._indent() + f"return {vals}"
+
+    def _gen_yield_from(self, node):
+        return self._indent() + f"// yield from {self._gen_expression(node.expression)}"
+
+    def _gen_global(self, node):
+        return self._indent() + f"// global {node.name}"
+
+    def _gen_nonlocal(self, node):
+        return self._indent() + f"// nonlocal {node.name}"
+
+    def _gen_async_with(self, node):
+        resource = self._gen_expression(node.resource)
+        return self._indent() + f"// async with {resource}"
+
+    def _gen_synchronized_block(self, node):
+        lines = [self._indent() + "// synchronized {"]
+        self.indent_level += 1
+        for s in node.body: lines.append(self._gen_statement(s))
+        self.indent_level -= 1
+        lines.append(self._indent() + "}")
+        return "\n".join(lines)
+
+    def _gen_go_statement(self, node):
+        """spin up func -> go func() Natively!"""
+        args = ", ".join(self._gen_expression(a) for a in node.arguments) if node.arguments else ""
+        return self._indent() + f"go {node.target}({args})"
+
+    def _gen_channel_declaration(self, node):
+        """create channel -> make(chan T) Natively!"""
+        cap = f", {node.capacity}" if node.capacity else ""
+        return self._indent() + f"{node.name} := make(chan interface{{}}{cap})"
+
+    def _gen_channel_send(self, node):
+        """send x through ch -> ch <- x Natively!"""
+        return self._indent() + f"{node.channel} <- {self._gen_expression(node.value)}"
+
+    def _gen_channel_receive(self, node):
+        """listen to ch -> <-ch Natively!"""
+        return self._indent() + f"{node.variable} := <-{node.channel}"
+
+    def _gen_channel_select(self, node):
+        """select { case x := <-ch: ... } Natively!"""
+        self._needs_time = True if node.timeout else self._needs_time
+        lines = [self._indent() + "select {"]
+        self.indent_level += 1
+        for ch, var, body in node.cases:
+            lines.append(self._indent() + f"case {var} := <-{ch}:")
+            self.indent_level += 1
+            for s in body: lines.append(self._gen_statement(s))
+            self.indent_level -= 1
+        if node.default_body:
+            lines.append(self._indent() + "default:")
+            self.indent_level += 1
+            for s in node.default_body: lines.append(self._gen_statement(s))
+            self.indent_level -= 1
+        if node.timeout:
+            lines.append(self._indent() + f"case <-time.After({self._gen_expression(node.timeout)}):")
+        self.indent_level -= 1
+        lines.append(self._indent() + "}")
+        return "\n".join(lines)
+
+    def _gen_channel_close(self, node):
+        """close channel -> close(ch)"""
+        return self._indent() + f"close({node.channel})"
+
+    def _gen_native_declaration(self, node):
+        return self._indent() + f"// @native({node.language})\n{node.code}"
+
+    def _gen_module_definition(self, node):
+        return self._indent() + f"// module {node.name}"
+
+    def _gen_mixin_statement(self, node):
+        return self._indent() + f"// mixin {node.mixin_type}: {node.mixin_name}"
+
+    def _gen_object_definition(self, node):
+        lines = [self._indent() + f"// object singleton {node.name}"]
+        return "\n".join(lines)
+
+    def _gen_actor_definition(self, node):
+        return self._indent() + f"// actor {node.name} (concurrent)"
+
+    def _gen_sealed_class(self, node):
+        return self._indent() + f"// sealed class {node.name}"
 
 
 def generate_go(ast: Program) -> str:

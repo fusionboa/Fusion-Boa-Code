@@ -77,6 +77,25 @@ class TypeScriptGenerator:
         if isinstance(node, RecordDefinition): return self._gen_record_definition(node)
         if isinstance(node, PropertyDefinition): return self._gen_property_definition(node)
         if isinstance(node, ExtensionDefinition): return self._gen_extension_definition(node)
+        # v0.9.1 Universal Polyglot
+        if isinstance(node, MultiReturnStatement): return self._gen_multi_return(node)
+        if isinstance(node, YieldFromStatement): return self._gen_yield_from(node)
+        if isinstance(node, GlobalStatement): return self._gen_global(node)
+        if isinstance(node, NonlocalStatement): return self._gen_nonlocal(node)
+        if isinstance(node, AsyncWithStatement): return self._gen_async_with(node)
+        if isinstance(node, SynchronizedBlock): return self._gen_synchronized_block(node)
+        if isinstance(node, GoStatement): return self._gen_go_statement(node)
+        if isinstance(node, ChannelDeclaration): return self._gen_channel_declaration(node)
+        if isinstance(node, ChannelSend): return self._gen_channel_send(node)
+        if isinstance(node, ChannelReceive): return self._gen_channel_receive(node)
+        if isinstance(node, ChannelSelect): return self._gen_channel_select(node)
+        if isinstance(node, ChannelClose): return self._gen_channel_close(node)
+        if isinstance(node, NativeDeclaration): return self._gen_native_declaration(node)
+        if isinstance(node, ModuleDefinition): return self._gen_module_definition(node)
+        if isinstance(node, MixinStatement): return self._gen_mixin_statement(node)
+        if isinstance(node, ObjectDefinition): return self._gen_object_definition(node)
+        if isinstance(node, ActorDefinition): return self._gen_actor_definition(node)
+        if isinstance(node, SealedClassDefinition): return self._gen_sealed_class(node)
         return self._indent() + f"// {type(node).__name__}"
 
     def _gen_expression(self, node: ASTNode) -> str:
@@ -135,6 +154,12 @@ class TypeScriptGenerator:
         if isinstance(node, GeneratorExpression): return self._gen_generator(node)
         if isinstance(node, IncrementExpression): return f"++{node.target}" if node.prefix else f"{node.target}++"
         if isinstance(node, DecrementExpression): return f"--{node.target}" if node.prefix else f"{node.target}--"
+        if isinstance(node, SetLiteral):
+            elements = ", ".join(self._gen_expression(e) for e in node.elements)
+            return f"new Set<unknown>([{elements}])"
+        if isinstance(node, TupleLiteral):
+            elements = ", ".join(self._gen_expression(e) for e in node.elements)
+            return f"[{elements}] as const"
         return f"null as any"
 
     def _gen_if(self, node):
@@ -369,6 +394,102 @@ class TypeScriptGenerator:
                 self.indent_level -= 1
                 lines.append(self._indent() + "};")
         return "\n".join(lines)
+
+    # ---- v0.9.1 Universal Polyglot Codegen ----
+
+    def _gen_set_literal(self, node):
+        elements = ", ".join(self._gen_expression(e) for e in node.elements)
+        return f"new Set<unknown>([{elements}])"
+
+    def _gen_tuple_literal(self, node):
+        elements = ", ".join(self._gen_expression(e) for e in node.elements)
+        return f"[{elements}] as const"
+
+    def _gen_multi_return(self, node):
+        vals = ", ".join(self._gen_expression(v) for v in node.values)
+        return self._indent() + f"return [{vals}] as const;"
+
+    def _gen_yield_from(self, node):
+        return self._indent() + f"yield* {self._gen_expression(node.expression)};"
+
+    def _gen_global(self, node):
+        return self._indent() + f"// global {node.name}"
+
+    def _gen_nonlocal(self, node):
+        return self._indent() + f"// nonlocal {node.name}"
+
+    def _gen_async_with(self, node):
+        resource = self._gen_expression(node.resource)
+        var = node.variable if node.variable else "_res"
+        lines = [self._indent() + f"// async with {resource}",
+                 self._indent() + f"let {var} = {resource};",
+                 self._indent() + "try {"]
+        self.indent_level += 1
+        for s in node.body: lines.append(self._gen_statement(s))
+        self.indent_level -= 1
+        lines.append(self._indent() + "} finally {")
+        lines.append(self._indent() + f"  // cleanup {var}")
+        lines.append(self._indent() + "}")
+        return "\n".join(lines)
+
+    def _gen_synchronized_block(self, node):
+        lines = [self._indent() + "// synchronized {", self._indent() + "{"]
+        self.indent_level += 1
+        for s in node.body: lines.append(self._gen_statement(s))
+        self.indent_level -= 1
+        lines.append(self._indent() + "}")
+        return "\n".join(lines)
+
+    def _gen_go_statement(self, node):
+        args = ", ".join(self._gen_expression(a) for a in node.arguments) if node.arguments else ""
+        return self._indent() + f"(async () => {{ await {node.target}({args}); }})();  // goroutine"
+
+    def _gen_channel_declaration(self, node):
+        return self._indent() + f"let {node.name}: any[] = [];  // channel"
+
+    def _gen_channel_send(self, node):
+        return self._indent() + f"{node.channel}.push({self._gen_expression(node.value)});  // send"
+
+    def _gen_channel_receive(self, node):
+        return self._indent() + f"let {node.variable} = {node.channel}.shift();  // receive"
+
+    def _gen_channel_select(self, node):
+        lines = [self._indent() + "// channel select"]
+        for ch, var, body in node.cases:
+            lines.append(self._indent() + f"// case {var} from {ch}:")
+            for s in body: lines.append(self._gen_statement(s))
+        return "\n".join(lines)
+
+    def _gen_channel_close(self, node):
+        return self._indent() + f"{node.channel} = null;  // close channel"
+
+    def _gen_native_declaration(self, node):
+        return self._indent() + f"// @native({node.language})\n{node.code}"
+
+    def _gen_module_definition(self, node):
+        lines = [self._indent() + f"// module {node.name} {{"]
+        self.indent_level += 1
+        for s in node.body: lines.append(self._gen_statement(s))
+        self.indent_level -= 1
+        lines.append(self._indent() + "}")
+        return "\n".join(lines)
+
+    def _gen_mixin_statement(self, node):
+        return self._indent() + f"// mixin {node.mixin_type}: {node.mixin_name}"
+
+    def _gen_object_definition(self, node):
+        lines = [self._indent() + f"const {node.name} = {{  // singleton object"]
+        self.indent_level += 1
+        for s in node.body: lines.append(self._gen_statement(s))
+        self.indent_level -= 1
+        lines.append(self._indent() + "};")
+        return "\n".join(lines)
+
+    def _gen_actor_definition(self, node):
+        return self._indent() + f"// actor {node.name} (concurrent)"
+
+    def _gen_sealed_class(self, node):
+        return self._indent() + f"// sealed class {node.name}"
 
 
 def generate_typescript(ast: Program) -> str:

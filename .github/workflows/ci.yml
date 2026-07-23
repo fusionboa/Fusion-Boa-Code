@@ -9,6 +9,23 @@ on:
 
 jobs:
   # =========================================================================
+  # Static analysis & linting
+  # =========================================================================
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install mypy
+        run: pip install mypy
+      - name: Run mypy type checking
+        run: mypy fusionboa_lang/ --ignore-missing-imports || echo 'mypy found issues (non-blocking for now)'
+      - name: Python syntax check
+        run: python -m compileall fusionboa_lang/ -q
+
+  # =========================================================================
   # Code generation tests (all 15+ language generators)
   # =========================================================================
   codegen-tests:

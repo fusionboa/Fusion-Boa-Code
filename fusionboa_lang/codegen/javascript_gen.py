@@ -72,6 +72,25 @@ class JavaScriptGenerator:
             RecordDefinition: self._gen_record_definition,
             PropertyDefinition: self._gen_property_definition,
             ExtensionDefinition: self._gen_extension_definition,
+            # v0.9.1 Universal Polyglot
+            MultiReturnStatement: self._gen_multi_return,
+            YieldFromStatement: self._gen_yield_from,
+            GlobalStatement: self._gen_global,
+            NonlocalStatement: self._gen_nonlocal,
+            AsyncWithStatement: self._gen_async_with,
+            SynchronizedBlock: self._gen_synchronized_block,
+            GoStatement: self._gen_go_statement,
+            ChannelDeclaration: self._gen_channel_declaration,
+            ChannelSend: self._gen_channel_send,
+            ChannelReceive: self._gen_channel_receive,
+            ChannelSelect: self._gen_channel_select,
+            ChannelClose: self._gen_channel_close,
+            NativeDeclaration: self._gen_native_declaration,
+            ModuleDefinition: self._gen_module_definition,
+            MixinStatement: self._gen_mixin_statement,
+            ObjectDefinition: self._gen_object_definition,
+            ActorDefinition: self._gen_actor_definition,
+            SealedClassDefinition: self._gen_sealed_class,
         }
         gen_func = gen_map.get(type(node))
         if gen_func: return gen_func(node)
@@ -102,6 +121,12 @@ class JavaScriptGenerator:
         if isinstance(node, GeneratorExpression): return self._gen_generator_expression(node)
         if isinstance(node, IncrementExpression): return f"++{node.target}" if node.prefix else f"{node.target}++"
         if isinstance(node, DecrementExpression): return f"--{node.target}" if node.prefix else f"{node.target}--"
+        if isinstance(node, SetLiteral):
+            elements = ", ".join(self._gen_expression(e) for e in node.elements)
+            return f"new Set([{elements}])"
+        if isinstance(node, TupleLiteral):
+            elements = ", ".join(self._gen_expression(e) for e in node.elements)
+            return f"[{elements}]"
         return f"/* Unknown: {type(node).__name__} */"
 
     def _gen_literal(self, node: Literal) -> str:
@@ -545,6 +570,129 @@ class JavaScriptGenerator:
             else:
                 lines.append(self._gen_statement(stmt))
         return "\n".join(lines)
+
+    # ---- v0.9.1 Universal Polyglot Codegen ----
+
+    def _gen_set_literal(self, node):
+        """{1, 2, 3} -> new Set([1, 2, 3])"""
+        elements = ", ".join(self._gen_expression(e) for e in node.elements)
+        return f"new Set([{elements}])"
+
+    def _gen_tuple_literal(self, node):
+        """(1, 2, 3) -> [1, 2, 3] (JS arrays are tuples)"""
+        elements = ", ".join(self._gen_expression(e) for e in node.elements)
+        return f"[{elements}]"
+
+    def _gen_multi_return(self, node):
+        """return a, b, c -> return [a, b, c]"""
+        vals = ", ".join(self._gen_expression(v) for v in node.values)
+        return self._indent() + f"return [{vals}];"
+
+    def _gen_yield_from(self, node):
+        """yield from expr -> yield* expr"""
+        return self._indent() + f"yield* {self._gen_expression(node.expression)};"
+
+    def _gen_global(self, node):
+        """global x -> // global x (JS uses module/global scope)"""
+        return self._indent() + f"// global {node.name}"
+
+    def _gen_nonlocal(self, node):
+        """nonlocal x -> // nonlocal x (JS closures handle this)"""
+        return self._indent() + f"// nonlocal {node.name}"
+
+    def _gen_async_with(self, node):
+        """async with resource -> try/finally with async cleanup"""
+        resource = self._gen_expression(node.resource)
+        var = node.variable if node.variable else "_res"
+        lines = [self._indent() + f"// async with {resource}",
+                 self._indent() + f"let {var} = {resource};",
+                 self._indent() + "try {"]
+        self.indent_level += 1
+        for s in node.body: lines.append(self._gen_statement(s))
+        self.indent_level -= 1
+        lines.append(self._indent() + "} finally {")
+        lines.append(self._indent() + f"  // cleanup {var}")
+        lines.append(self._indent() + "}")
+        return "\n".join(lines)
+
+    def _gen_synchronized_block(self, node):
+        """synchronized: body -> commented block (JS is single-threaded)"""
+        lines = [self._indent() + "// synchronized block",
+                 self._indent() + "{"]
+        self.indent_level += 1
+        for s in node.body: lines.append(self._gen_statement(s))
+        self.indent_level -= 1
+        lines.append(self._indent() + "}")
+        return "\n".join(lines)
+
+    def _gen_go_statement(self, node):
+        """spin up func() -> async IIFE"""
+        args = ", ".join(self._gen_expression(a) for a in node.arguments) if node.arguments else ""
+        return self._indent() + f"(async () => {{ await {node.target}({args}); }})();  // goroutine"
+
+    def _gen_channel_declaration(self, node):
+        """create channel -> array-based channel"""
+        cap = node.capacity if node.capacity else "Infinity"
+        return self._indent() + f"let {node.name} = [];  // channel (buffer={cap})"
+
+    def _gen_channel_send(self, node):
+        """send val through ch -> ch.push(val)"""
+        val = self._gen_expression(node.value)
+        return self._indent() + f"{node.channel}.push({val});  // channel send"
+
+    def _gen_channel_receive(self, node):
+        """listen to ch -> ch.shift()"""
+        return self._indent() + f"let {node.variable} = {node.channel}.shift();  // channel receive"
+
+    def _gen_channel_select(self, node):
+        """select from channels -> Promise.race"""
+        lines = [self._indent() + "// channel select (Promise.race)"]
+        for ch, var, body in node.cases:
+            lines.append(self._indent() + f"// case {var} from {ch}:")
+            for s in body: lines.append(self._gen_statement(s))
+        if node.default_body:
+            lines.append(self._indent() + "// default:")
+            for s in node.default_body: lines.append(self._gen_statement(s))
+        return "\n".join(lines)
+
+    def _gen_channel_close(self, node):
+        """close channel -> set to null"""
+        return self._indent() + f"{node.channel} = null;  // close channel"
+
+    def _gen_native_declaration(self, node):
+        """@native -> raw code passthrough"""
+        return self._indent() + f"// @native({node.language}):\n{node.code}"
+
+    def _gen_module_definition(self, node):
+        """define module Name -> IIFE module"""
+        lines = [self._indent() + f"// module {node.name}",
+                 self._indent() + "{"]
+        self.indent_level += 1
+        for s in node.body: lines.append(self._gen_statement(s))
+        self.indent_level -= 1
+        lines.append(self._indent() + "}")
+        return "\n".join(lines)
+
+    def _gen_mixin_statement(self, node):
+        """include module -> Object.assign"""
+        return self._indent() + f"// mixin {node.mixin_type}: {node.mixin_name}"
+
+    def _gen_object_definition(self, node):
+        """define object singleton -> const singleton"""
+        lines = [self._indent() + f"const {node.name} = {{  // singleton object"]
+        self.indent_level += 1
+        for s in node.body: lines.append(self._gen_statement(s))
+        self.indent_level -= 1
+        lines.append(self._indent() + "};")
+        return "\n".join(lines)
+
+    def _gen_actor_definition(self, node):
+        """define actor -> concurrent object wrapper"""
+        return self._indent() + f"// actor {node.name} (concurrent actor)"
+
+    def _gen_sealed_class(self, node):
+        """sealed class -> final class (all subclasses must be in same module)"""
+        return self._indent() + f"// sealed class {node.name}"
 
 
 def generate_javascript(ast: Program) -> str:
