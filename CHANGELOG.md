@@ -2,6 +2,25 @@
 
 All notable changes to FusionBoa will be documented in this file.
 
+## [v0.9.6] — 2026-07-23
+
+### Added
+- Real v0.9.1 codegen for JavaScript, TypeScript, and Go (sets, tuples, multi-return, yield-from, goroutines, channels, select, mixins, objects, actors, sealed classes, synchronized blocks, async-with)
+- Go: native goroutine/channel support — `go func()`, `make(chan)`, `ch <- x`, `<-ch`, `select {}`, `close(ch)`
+- Go: conditional time import for channel select timeout
+- CI linting step (mypy + compileall) in GitHub Actions
+- Integration test suite (17 tests: py, js, ts, go end-to-end)
+- Type checker test suite (10 tests: inference, compatibility, records)
+
+### Changed
+- SetLiteral/TupleLiteral now properly handled in `_gen_expression` (not just `_gen_statement`)
+- Updated all metadata to v0.9.6: 902 keywords, 318 token types, 90+ features, 232 tests
+
+### Fixed
+- MixinStatement uses correct field names (mixin_name/mixin_type)
+- Removed duplicate SetLiteral/TupleLiteral from gen_map (expression nodes only)
+- Go generate() method properly constructs package/import structure
+
 ## [v0.9.2] — 2026-07-23
 
 ### Changed
