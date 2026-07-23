@@ -68,7 +68,38 @@ from fusionboa_lang.codegen.target_router import (
 from fusionboa_lang.runtime.executor import execute
 
 
-VERSION = "1.0.0-alpha"
+VERSION = "0.9.6"
+
+DEBUG = False  # Set by --debug flag
+
+
+def format_error_for_cli(e: Exception, source_lines: list = None, filename: str = "") -> str:
+    """Format any exception for clean CLI display."""
+    if DEBUG:
+        import traceback
+        return traceback.format_exc()
+    
+    # Already a FusionBoaError with source context
+    if hasattr(e, 'line') and hasattr(e, 'col'):
+        from fusionboa_lang.errors.error_handler import format_error
+        return format_error(e, source_lines, filename)
+    
+    # LexerError / ParseError with token info
+    if hasattr(e, 'token'):
+        line = e.token.line if e.token else 0
+        col = e.token.col if e.token else 0
+        hint = ""
+        if source_lines and line > 0 and line <= len(source_lines):
+            offending = source_lines[line - 1].strip()
+            hint = f"Near: {offending}"
+        from fusionboa_lang.errors.error_handler import format_error, FusionBoaSyntaxError
+        fb_err = FusionBoaSyntaxError(str(e), line, col, hint=hint)
+        return format_error(fb_err, source_lines, filename)
+    
+    # Generic error
+    prefix = f"\033[1;31merror\033[0m: {e}" if sys.stderr.isatty() else f"error: {e}"
+    hint = "\033[2;37mRun with --debug to see the full traceback.\033[0m" if sys.stderr.isatty() else "Run with --debug to see the full traceback."
+    return f"{prefix}\n{hint}"
 
 BANNER = r"""
   ______          _   _             ____
@@ -312,14 +343,16 @@ def run_file(filepath: str, target: str = "python", show_code: bool = False):
         if stdout: print(stdout)
         if stderr: print(stderr, file=sys.stderr)
         sys.exit(exit_code)
-    except LexerError as e:
-        print(f"Lexer Error: {e}", file=sys.stderr)
+    except (LexerError, ParseError) as e:
+        source_lines = source.split('\n')
+        print(format_error_for_cli(e, source_lines, filepath), file=sys.stderr)
         sys.exit(1)
-    except ParseError as e:
-        print(f"Parse Error: {e}", file=sys.stderr)
-        sys.exit(1)
+    except KeyboardInterrupt:
+        print("\nInterrupted.", file=sys.stderr)
+        sys.exit(130)
     except Exception as e:
-        print(f"Error: {e}", file=sys.stderr)
+        source_lines = source.split('\n')
+        print(format_error_for_cli(e, source_lines, filepath), file=sys.stderr)
         sys.exit(1)
 
 
@@ -377,14 +410,16 @@ def build_file(filepath: str, target: str = "python", output: str = None, specif
             with open(output_path, "w", encoding="utf-8") as f:
                 f.write(target_code)
             print(f"  Compiled to: {output_path}")
-    except LexerError as e:
-        print(f"Lexer Error: {e}", file=sys.stderr)
+    except (LexerError, ParseError) as e:
+        source_lines = source.split('\n')
+        print(format_error_for_cli(e, source_lines, filepath), file=sys.stderr)
         sys.exit(1)
-    except ParseError as e:
-        print(f"Parse Error: {e}", file=sys.stderr)
-        sys.exit(1)
+    except KeyboardInterrupt:
+        print("\nInterrupted.", file=sys.stderr)
+        sys.exit(130)
     except Exception as e:
-        print(f"Error: {e}", file=sys.stderr)
+        source_lines = source.split('\n')
+        print(format_error_for_cli(e, source_lines, filepath), file=sys.stderr)
         sys.exit(1)
 
 
@@ -556,6 +591,7 @@ def main():
         description="FusionBoa Language - Write in English, compile to everything",
         prog="fusionboa"
     )
+    parser.add_argument("--debug", action="store_true", help="Show full traceback for errors")
     subparsers = parser.add_subparsers(dest="command", help="Command")
 
     run_parser = subparsers.add_parser("run", help="Compile and run a FusionBoa file")
@@ -589,6 +625,11 @@ def main():
     subparsers.add_parser("help", help="Show help and usage")
 
     args = parser.parse_args()
+    
+    global DEBUG
+    DEBUG = args.debug
+    if DEBUG:
+        sys.stderr.isatty = lambda: False  # Disable colors in debug mode
 
     if args.command == "run":
         run_file(args.file, target=args.target, show_code=args.show_code)
