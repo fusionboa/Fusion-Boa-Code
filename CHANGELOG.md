@@ -2,6 +2,25 @@
 
 All notable changes to FusionBoa will be documented in this file.
 
+## [v0.9.7] — 2026-07-23
+
+### Added
+- Professional error handling system (FusionBoaError base class with line/col/severity/hint)
+- Pretty-printed errors with source context, ^ pointers, and fix hints
+- --debug flag for full traceback visibility
+- Keyword misspelling suggestions (whlie -> while, functoin -> function, etc.)
+- Clean KeyboardInterrupt handling (no traceback)
+
+### Changed
+- VERSION now reads consistently across fusionboa.py, README, pyproject.toml, setup.py
+- All error paths produce clean messages instead of cryptic tracebacks
+- LexerError and ParseError properly wrapped before display
+
+### Fixed
+- LexerError crash in format_error_for_cli (missing severity/hint attributes)
+- --debug flag now works after subcommand (not just before)
+- CLI VERSION hardcoded to 1.0.0-alpha fixed to 0.9.7
+
 ## [v0.9.6] — 2026-07-23
 
 ### Added

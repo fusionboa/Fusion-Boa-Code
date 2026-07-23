@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "fusionboa-lang"
-version = "0.9.6"
-description = "FusionBoa v0.9.6 — The polyglot programming language with 902 English-like keywords. Write once, compile to 23 targets. 90+ language features including multiple dispatch, generators, UFCS, macros, operator overloading, concurrency channels, memory management, and meta-factories."
+version = "0.9.7"
+description = "FusionBoa v0.9.7 — The polyglot programming language with 902 English-like keywords. Write once, compile to 23 targets. 90+ language features including multiple dispatch, generators, UFCS, macros, operator overloading, concurrency channels, memory management, and meta-factories."
 readme = "README.md"
 requires-python = ">=3.8"
 dependencies = [

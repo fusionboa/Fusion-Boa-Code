@@ -68,7 +68,7 @@ from fusionboa_lang.codegen.target_router import (
 from fusionboa_lang.runtime.executor import execute
 
 
-VERSION = "0.9.6"
+VERSION = "0.9.7"
 
 DEBUG = False  # Set by --debug flag
 
@@ -81,7 +81,9 @@ def format_error_for_cli(e: Exception, source_lines: list = None, filename: str 
     
     # Already a FusionBoaError with source context
     if hasattr(e, 'line') and hasattr(e, 'col'):
-        from fusionboa_lang.errors.error_handler import format_error
+        from fusionboa_lang.errors.error_handler import format_error, FusionBoaError, FusionBoaSyntaxError
+        if not isinstance(e, FusionBoaError):
+            e = FusionBoaSyntaxError(str(e), e.line, e.col)
         return format_error(e, source_lines, filename)
     
     # LexerError / ParseError with token info
@@ -595,11 +597,13 @@ def main():
     subparsers = parser.add_subparsers(dest="command", help="Command")
 
     run_parser = subparsers.add_parser("run", help="Compile and run a FusionBoa file")
+    run_parser.add_argument("--debug", action="store_true", help=argparse.SUPPRESS)
     run_parser.add_argument("file", help="FusionBoa source file (.fusboa)")
     run_parser.add_argument("--target", "-t", default="python", help="Target language")
     run_parser.add_argument("--show-code", "-s", action="store_true", help="Show generated code before executing")
 
     build_parser = subparsers.add_parser("build", help="Compile a FusionBoa file")
+    build_parser.add_argument("--debug", action="store_true", help=argparse.SUPPRESS)
     build_parser.add_argument("file", help="FusionBoa source file (.fusboa)")
     build_parser.add_argument("--target", "-t", default="python", help="Target language")
     build_parser.add_argument("--targets", help="Comma-separated targets for multi-target build")
@@ -627,9 +631,10 @@ def main():
     args = parser.parse_args()
     
     global DEBUG
-    DEBUG = args.debug
+    DEBUG = getattr(args, 'debug', False)
     if DEBUG:
-        sys.stderr.isatty = lambda: False  # Disable colors in debug mode
+        import os
+        os.environ['FUSIONBOA_DEBUG'] = '1'
 
     if args.command == "run":
         run_file(args.file, target=args.target, show_code=args.show_code)
