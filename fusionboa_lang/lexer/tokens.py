@@ -1447,6 +1447,129 @@ KEYWORDS = {
     "splat": TokenType.SPREAD,
     "${": TokenType.DOLLAR,
     "#{": TokenType.HASH,
+
+    # ============ v1.0.0 — FILLING THE GAPS: Missing Aliases ============
+
+    # --- Boolean Aliases (True) ---
+    # NOTE: "on" intentionally excluded — too common as a preposition
+    # ("on each", "on condition", "extension on", etc.)
+    "enabled": TokenType.BOOLEAN,
+    "correct": TokenType.BOOLEAN,
+    "valid": TokenType.BOOLEAN,
+    "yup": TokenType.BOOLEAN,
+    "sure": TokenType.BOOLEAN,
+
+    # --- Boolean Aliases (False) ---
+    # NOTE: "off" intentionally excluded — too common as a variable name
+    "disabled": TokenType.BOOLEAN,
+    "incorrect": TokenType.BOOLEAN,
+    "invalid": TokenType.BOOLEAN,
+    "nope": TokenType.BOOLEAN,
+
+    # --- Null Aliases ---
+    "blank": TokenType.NULL,
+    "undefined": TokenType.NULL,
+    "absent": TokenType.NULL,
+    "missing": TokenType.NULL,
+
+    # --- Type Name Aliases ---
+    "whole number": TokenType.INTEGER_TYPE,
+    "number": TokenType.FLOAT_TYPE,
+    "decimal": TokenType.FLOAT_TYPE,
+    "text": TokenType.STRING_TYPE,
+    "character": TokenType.STRING_TYPE,
+    "chars": TokenType.STRING_TYPE,
+    "flag": TokenType.BOOLEAN_TYPE,
+    "truth": TokenType.BOOLEAN_TYPE,
+    "array": TokenType.LIST_TYPE,
+    "collection": TokenType.LIST_TYPE,
+    "sequence": TokenType.LIST_TYPE,
+    "table": TokenType.DICT_TYPE,
+    "hash": TokenType.DICT_TYPE,
+    "mapping": TokenType.DICT_TYPE,
+
+    # --- Print Aliases ---
+    "inspect": TokenType.PRINT,
+    "debug": TokenType.PRINT,
+    "trace": TokenType.PRINT,
+    "watch": TokenType.PRINT,
+
+    # --- Break Aliases ---
+    "quit": TokenType.BREAK,
+    "abort": TokenType.BREAK,
+    "halt": TokenType.BREAK,
+    "terminate": TokenType.BREAK,
+    "cease": TokenType.BREAK,
+
+    # --- Continue Aliases ---
+    "carry on": TokenType.CONTINUE,
+    "keep going": TokenType.CONTINUE,
+    "move on": TokenType.CONTINUE,
+    "advance": TokenType.CONTINUE,
+
+    # --- Functional Operation Aliases ---
+    "apply": TokenType.MAP,
+    "screen": TokenType.FILTER,
+    "weed out": TokenType.FILTER,
+    "accumulate": TokenType.REDUCE,
+    "aggregate": TokenType.REDUCE,
+    "total up": TokenType.REDUCE,
+    # NOTE: "merge" intentionally excluded — already removed from FAN_IN for
+    # collision risk with common usage. Use "combine" or "blend" instead.
+    "blend": TokenType.REDUCE,
+    "fuse": TokenType.REDUCE,
+    "unify": TokenType.REDUCE,
+    "locate": TokenType.SEARCH,
+    "seek": TokenType.SEARCH,
+    "spot": TokenType.SEARCH,
+    "discover": TokenType.SEARCH,
+    "swap out": TokenType.REPLACE_WITH,
+    "exchange": TokenType.REPLACE_WITH,
+
+    # --- Collection Operation Aliases ---
+    "flip": TokenType.REVERSE,
+    "invert": TokenType.REVERSE,
+    "turn around": TokenType.REVERSE,
+    "arrange": TokenType.SORT,
+    "order": TokenType.SORT,
+    "rank": TokenType.SORT,
+    "organize": TokenType.SORT,
+    "purge": TokenType.CLEAR,
+    "wipe": TokenType.CLEAR,
+    "reset": TokenType.CLEAR,
+    "empty out": TokenType.CLEAR,
+    "fetch": TokenType.FIRST,
+    "retrieve": TokenType.FIRST,
+    "obtain": TokenType.FIRST,
+    "acquire": TokenType.FIRST,
+    "discard": TokenType.DROP,
+    "throw away": TokenType.DROP,
+    "reject": TokenType.DROP,
+    "omit": TokenType.DROP,
+    "attach": TokenType.APPEND,
+    "tack on": TokenType.APPEND,
+    "strip out": TokenType.REMOVE,
+    "prepend": TokenType.PUSH,
+    "extract": TokenType.POP,
+    "pluck": TokenType.POP,
+    "detach": TokenType.REMOVE,
+
+    # --- Connector / Preposition Aliases ---
+    # NOTE: "which", "that", "whose" intentionally excluded — too common
+    # as English filler words ("in the event that", "so that", etc.)
+
+    # --- Additional Arithmetic Aliases ---
+    # NOTE: "halved", "doubled", "tripled" intentionally excluded —
+    # these imply division/multiplication by literal 2/3 and need
+    # dedicated parser support (e.g., "x halved" → x / 2, not x / y).
+    # NOTE: "percent" excluded — maps to PERCENT (%) but in natural
+    # English "percent" means "divide by 100," which is different.
+
+    # --- Additional Comparison Aliases ---
+    "is nowhere close to": TokenType.BANG_EQUAL,
+
+
+
 }
 
 

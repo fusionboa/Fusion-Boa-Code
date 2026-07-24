@@ -115,7 +115,29 @@ class Lexer:
         if current_phrase in KEYWORDS:
             token_type = KEYWORDS[current_phrase]
             value_map = {"true": True, "false": False, "yes": True, "no": False,
-                         "null": None, "none": None, "nothing": None}
+                         "null": None, "none": None, "nothing": None,
+                         # v1.0.0 Boolean aliases
+                         "enabled": True, "on": True, "correct": True,
+                         "valid": True, "yup": True, "sure": True,
+                         "ok": True, "okay": True, "alright": True,
+                         "fine": True, "good": True,
+                         "definitely": True, "absolutely": True,
+                         "certainly": True, "surely": True,
+                         "indeed": True, "positively": True,
+                         "affirmative": True, "yeah": True, "yep": True,
+                         # v1.0.0 Boolean False aliases
+                         "disabled": False, "off": False,
+                         "incorrect": False, "invalid": False,
+                         "nope": False, "nah": False,
+                         "negative": False, "never": False,
+                         "nada": False, "not ok": False,
+                         "not okay": False, "not good": False,
+                         "not fine": False, "bad": False,
+                         # v1.0.0 Null aliases
+                         "blank": None, "undefined": None,
+                         "absent": None, "missing": None,
+                         "maybe": None, "perhaps": None,
+                         "possibly": None}
             if current_phrase in value_map:
                 return Token(token_type, value_map[current_phrase], start_line, start_col)
             return Token(token_type, current_phrase, start_line, start_col)
@@ -137,7 +159,29 @@ class Lexer:
         if first_word in KEYWORDS:
             token_type = KEYWORDS[first_word]
             value_map = {"true": True, "false": False, "yes": True, "no": False,
-                         "null": None, "none": None, "nothing": None}
+                         "null": None, "none": None, "nothing": None,
+                         # v1.0.0 Boolean aliases
+                         "enabled": True, "on": True, "correct": True,
+                         "valid": True, "yup": True, "sure": True,
+                         "ok": True, "okay": True, "alright": True,
+                         "fine": True, "good": True,
+                         "definitely": True, "absolutely": True,
+                         "certainly": True, "surely": True,
+                         "indeed": True, "positively": True,
+                         "affirmative": True, "yeah": True, "yep": True,
+                         # v1.0.0 Boolean False aliases
+                         "disabled": False, "off": False,
+                         "incorrect": False, "invalid": False,
+                         "nope": False, "nah": False,
+                         "negative": False, "never": False,
+                         "nada": False, "not ok": False,
+                         "not okay": False, "not good": False,
+                         "not fine": False, "bad": False,
+                         # v1.0.0 Null aliases
+                         "blank": None, "undefined": None,
+                         "absent": None, "missing": None,
+                         "maybe": None, "perhaps": None,
+                         "possibly": None}
             if first_word in value_map:
                 return Token(token_type, value_map[first_word], start_line, start_col)
             return Token(token_type, first_word, start_line, start_col)
